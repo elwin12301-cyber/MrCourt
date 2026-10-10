@@ -1,0 +1,15 @@
+{
+  "review_status": "UNVERIFIED plain-language wording written for development. A lawyer must review every entry before it is shown to real clients; until then it is switched off in production.",
+  "terms": [
+    { "term": "CNR", "meaning": "A unique number that identifies a case in the court records. You can use it to look the case up on court websites." },
+    { "term": "Notice", "meaning": "A written message that formally tells someone about a claim or a demand, and usually gives them time to respond." },
+    { "term": "Hearing", "meaning": "A date on which the case is listed before the court. Many hearings are short and only move the case forward." },
+    { "term": "Evidence", "meaning": "The statements of witnesses and the documents that each side puts before the court to support its case." },
+    { "term": "Arguments", "meaning": "The stage where each side's lawyer explains to the court how the evidence and the law support their side." },
+    { "term": "Adjournment", "meaning": "When the court moves a hearing to a later date. It does not decide anything about the case." },
+    { "term": "Order", "meaning": "A written decision or direction from the court. It can be a final decision or a step along the way." },
+    { "term": "Judgment", "meaning": "The court's final decision on the case, with its reasons." },
+    { "term": "Petitioner", "meaning": "The person who starts a case by asking the court for something." },
+    { "term": "Respondent", "meaning": "The person or organisation the case is against, who is asked to respond." }
+  ]
+}

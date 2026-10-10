@@ -1,0 +1,49 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+
+# Agent folder may hold credentials or auth tokens
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Runtime data
+uploads/
+*.log
+
+# OS and editors
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# Local development database
+*.db
+e2e-uploads/
+
+# Uploaded knowledge documents
+knowledge/
+
+# Database backups and copies
+*.db.*
+*.bak
+*.sqlite

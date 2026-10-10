@@ -1,0 +1,52 @@
+{
+  "review_status": "UNVERIFIED development sample. Wording is paraphrased from memory for testing; check every entry against the official text before any real use.",
+  "sources": [
+    {
+      "key": "ni-138",
+      "kind": "act_section",
+      "instrument": "Negotiable Instruments Act, 1881",
+      "section": "138",
+      "citation_label": "Negotiable Instruments Act, 1881 · Section 138",
+      "source_url": "https://www.indiacode.nic.in/",
+      "text": "Section 138 (dishonour of cheque for insufficiency of funds). Where a cheque drawn by a person on an account maintained by him with a banker, for the payment of money to another person for the discharge of a debt or other liability, is returned by the bank unpaid because the amount standing to the credit of that account is insufficient to honour the cheque, or because it exceeds the amount arranged to be paid from that account, that person is deemed to have committed an offence. The punishment is imprisonment for a term which may extend to two years, or a fine which may extend to twice the amount of the cheque, or both. The offence applies only if the cheque was presented within its validity period, the payee made a demand for payment by written notice within thirty days of receiving information from the bank that the cheque was returned unpaid, and the drawer failed to pay the amount within fifteen days of receiving that notice."
+    },
+    {
+      "key": "ni-142",
+      "kind": "act_section",
+      "instrument": "Negotiable Instruments Act, 1881",
+      "section": "142",
+      "citation_label": "Negotiable Instruments Act, 1881 · Section 142",
+      "source_url": "https://www.indiacode.nic.in/",
+      "text": "Section 142 (cognizance of offences). Despite anything in the Code of Criminal Procedure, no court takes cognizance of an offence punishable under section 138 except on a written complaint made by the payee or the holder in due course of the cheque, made within one month of the date on which the cause of action arises. No court inferior to a Metropolitan Magistrate or a Judicial Magistrate of the first class may try an offence under section 138. The offence is inquired into and tried only by a court within whose local jurisdiction the branch of the bank where the payee or holder in due course maintains the account is situated, where the cheque was delivered for collection through an account."
+    },
+    {
+      "key": "bnss-480",
+      "kind": "act_section",
+      "instrument": "Bharatiya Nagarik Suraksha Sanhita, 2023",
+      "section": "480",
+      "citation_label": "Bharatiya Nagarik Suraksha Sanhita, 2023 · Section 480",
+      "source_url": "https://www.indiacode.nic.in/",
+      "text": "Section 480 (when bail may be taken in case of non-bailable offence). A person accused of or suspected of a non-bailable offence who is arrested or detained without warrant, or appears or is brought before a court other than the High Court or Court of Session, may be released on bail. He is not released if there appear reasonable grounds for believing that he has been guilty of an offence punishable with death or imprisonment for life. A court may release on bail a person under the age of sixteen years, a woman, or a person who is sick or infirm, even for such an offence. Bail may also be considered where, after investigation or trial has begun, reasonable grounds for believing guilt do not appear, and the court records its reasons in writing."
+    },
+    {
+      "key": "bnss-483",
+      "kind": "act_section",
+      "instrument": "Bharatiya Nagarik Suraksha Sanhita, 2023",
+      "section": "483",
+      "citation_label": "Bharatiya Nagarik Suraksha Sanhita, 2023 · Section 483",
+      "source_url": "https://www.indiacode.nic.in/",
+      "text": "Section 483 (special powers of High Court or Court of Session regarding bail). A High Court or Court of Session may direct that any person accused of an offence and in custody be released on bail, and may set aside or modify any condition imposed by a Magistrate when releasing a person on bail. Before granting bail to a person accused of an offence triable exclusively by the Court of Session or punishable with imprisonment for life, the High Court or Court of Session gives notice of the application to the Public Prosecutor, unless it is impracticable to do so."
+    },
+    {
+      "key": "crpc-437",
+      "kind": "act_section",
+      "instrument": "Code of Criminal Procedure, 1973",
+      "section": "437",
+      "citation_label": "Code of Criminal Procedure, 1973 · Section 437",
+      "source_url": "https://www.indiacode.nic.in/",
+      "effective_status": "repealed",
+      "replaced_by": "bnss-480",
+      "text": "Section 437 (when bail may be taken in case of non-bailable offence). Repealed and replaced by section 480 of the Bharatiya Nagarik Suraksha Sanhita, 2023."
+    }
+  ]
+}

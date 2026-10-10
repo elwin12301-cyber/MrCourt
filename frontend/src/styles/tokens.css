@@ -1,0 +1,19 @@
+/* Deviation from the prototype, for WCAG 2.1 AA contrast (constitution principle IV), light theme only:
+   --muted  #6B7280 -> #636978  (was 4.05:1 on the Closed chip)
+   --gold-ink #8A6A33 -> #82622D (was 4.22:1 on beige chips and source numbers)
+   Every other value is the prototype's. */
+/* Layout: navy sidebar + ivory workspace; full-bleed split screens for welcome and login */
+:root{
+  --bg:#FAF7F0; --surface:#FFFFFF; --ink:#1F2430; --muted:#636978; --line:#E5DFD0;
+  --navy:#14213D; --navy-2:#22345C; --on-navy:#FFFFFF; --sand:#D9D2C0;
+  --gold:#B8935A; --gold-ink:#82622D; --tint:#F3EBDA; --green:#2F6B4F; --green-bg:#E6EFE9; --closed-bg:#ECEBE6;
+  --serif:'Playfair Display',Georgia,'Times New Roman',serif;
+  --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1424; --surface:#161F36; --ink:#ECE8DC; --muted:#98A1B4; --line:#2A3654;
+  --navy:#0A0F1D; --navy-2:#1B2849; --gold:#CDA86B; --gold-ink:#D8B77C; --tint:#2A2A2C; --green:#7CC6A0; --green-bg:#1B3029; --closed-bg:#222B42; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1424; --surface:#161F36; --ink:#ECE8DC; --muted:#98A1B4; --line:#2A3654;
+  --navy:#0A0F1D; --navy-2:#1B2849; --gold:#CDA86B; --gold-ink:#D8B77C; --tint:#2A2A2C; --green:#7CC6A0; --green-bg:#1B3029; --closed-bg:#222B42; color-scheme:dark}
+

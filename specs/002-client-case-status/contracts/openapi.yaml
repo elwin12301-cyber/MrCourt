@@ -1,0 +1,476 @@
+openapi: 3.1.0
+info:
+  title: MrCourt API - client case status (additions to feature 001)
+  version: 1.1.0
+  description: >
+    New and changed endpoints only. Petitioners use /client/* and never receive private fields.
+    Advocate endpoints return 403 to petitioners and 404 for cases the advocate does not own.
+servers:
+  - url: /api/v1
+security:
+  - sessionCookie: []
+paths:
+  /client/dashboard:
+    get:
+      summary: Client dashboard (petitioners only)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientDashboard' }
+        '403': { description: Not a petitioner }
+  /client/cases/{caseId}:
+    get:
+      summary: The client's view of one case
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Contains only fields meant for clients
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientCase' }
+        '404': { description: Not found, or not an accepted client of this case }
+  /client/cases/{caseId}/documents/{documentId}/download:
+    get:
+      summary: Download a document the advocate has shared
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: The file }
+        '404': { description: Not shared, or not visible to this client }
+  /client/cases/{caseId}/questions:
+    get:
+      summary: This client's own questions on the case, with replies
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClientQuestion' }
+    post:
+      summary: Ask the lawyer a question or request an update
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind]
+              properties:
+                kind: { type: string, enum: [question, update_request] }
+                text: { type: string, minLength: 1, maxLength: 2000, description: Required when kind is question }
+      responses:
+        '201':
+          description: Sent
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientQuestion' }
+        '409': { description: The lawyer is no longer available on MrCourt }
+        '422': { description: Empty or too long }
+        '429': { description: Too many messages }
+  /client/updates:
+    get:
+      summary: Updates for the signed-in client, newest first
+      parameters:
+        - { name: unread, in: query, schema: { type: boolean } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  unread_count: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ClientUpdate' }
+  /client/updates/{updateId}/read:
+    post:
+      summary: Mark one update as read
+      parameters:
+        - { name: updateId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Marked read }
+  /client/updates/read-all:
+    post:
+      summary: Mark every update as read
+      responses:
+        '204': { description: Marked read }
+  /glossary:
+    get:
+      summary: Plain-language explanations of legal terms
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    term: { type: string }
+                    meaning: { type: string }
+  /cases/{caseId}/client-status:
+    put:
+      summary: Set the client-facing status (advocate who owns the case)
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/ClientStatus' }
+      responses:
+        '200':
+          description: Updated; a timeline entry and client updates are created when the value changed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientStatusState' }
+  /cases/{caseId}/client-updates:
+    post:
+      summary: Post a short plain-language update to the case's clients
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1, maxLength: 1000 }
+      responses:
+        '201': { description: Posted }
+  /cases/{caseId}/timeline:
+    get:
+      summary: The full internal timeline, including private entries (advocate only)
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/TimelineEntryAdvocate' }
+    post:
+      summary: Add a timeline note (private unless shared)
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1, maxLength: 1000 }
+                shared_with_client: { type: boolean, default: false }
+      responses:
+        '201': { description: Added }
+  /cases/{caseId}/timeline/{entryId}/sharing:
+    put:
+      summary: Share or unshare a timeline note
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: entryId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shared]
+              properties:
+                shared: { type: boolean }
+      responses:
+        '200': { description: Updated }
+  /cases/{caseId}/documents/{documentId}/sharing:
+    put:
+      summary: Share or unshare a document with the client
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: documentId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shared]
+              properties:
+                shared: { type: boolean }
+      responses:
+        '200': { description: Updated; sharing notifies clients, unsharing does not }
+  /cases/{caseId}/hearings/{hearingId}/outcome:
+    put:
+      summary: Record a hearing outcome and choose whether to share it
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: hearingId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [outcome]
+              properties:
+                outcome: { type: string, maxLength: 2000 }
+                shared: { type: boolean, default: false }
+      responses:
+        '200': { description: Recorded }
+  /cases/{caseId}/invitations:
+    get:
+      summary: Clients invited to the case and their state (advocate only)
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string, format: uuid }
+                    contact_or_name: { type: string }
+                    status: { type: string, enum: [pending, accepted, removed] }
+                    accepted_at: { type: [string, 'null'], format: date-time }
+  /cases/{caseId}/client-questions:
+    get:
+      summary: Questions from every client on the case (advocate only)
+      parameters:
+        - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ClientQuestionAdvocate' }
+  /client-questions/{questionId}/reply:
+    post:
+      summary: Reply to a client's question (advocate who owns the case)
+      parameters:
+        - { name: questionId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '200': { description: Replied; the asking client gets an update }
+        '409': { description: Already replied }
+  /me/client-contact:
+    put:
+      summary: Set the contact details clients can see (advocates only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClientContact' }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientContact' }
+  /questions:
+    post:
+      summary: (Changed) Ask MrCourt. Clients also receive advice-guard fields
+      description: >
+        Same request and answer as feature 001. For petitioners the answer additionally contains
+        case_specific_notice (set when the question looks like it is about their own case) and
+        lawyer_reminder (always present).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClientAwareAnswer' }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: mrcourt_session
+  schemas:
+    ClientStatus:
+      type: string
+      enum: [notice_stage, hearing_scheduled, awaiting_order, closed]
+      description: Shown as Notice stage, Hearing scheduled, Awaiting order, Closed
+    ClientStatusState:
+      type: object
+      properties:
+        status: { oneOf: [{ $ref: '#/components/schemas/ClientStatus' }, { type: 'null' }] }
+        changed_at: { type: [string, 'null'], format: date-time }
+    Lawyer:
+      type: object
+      properties:
+        name: { type: string }
+        verification_status: { type: string, enum: [none, pending, verified] }
+        phone: { type: [string, 'null'] }
+        email: { type: [string, 'null'] }
+        office: { type: [string, 'null'] }
+        available: { type: boolean, description: False when the advocate has deactivated }
+    ClientContact:
+      type: object
+      properties:
+        phone: { type: [string, 'null'], maxLength: 32 }
+        email: { type: [string, 'null'], maxLength: 320 }
+        office: { type: [string, 'null'], maxLength: 300 }
+    HearingForClient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        scheduled_at: { type: string, format: date-time }
+        court: { type: string }
+        description:
+          type: [object, 'null']
+          description: General information about this kind of hearing; null when there is no reliable basis
+          properties:
+            text: { type: string }
+            label: { type: string, example: General information }
+            disclaimer: { type: string, example: Informational only, not legal advice. }
+        outcome: { type: [string, 'null'], description: Present only when the advocate shared it }
+    TimelineEntryForClient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string }
+        text: { type: string }
+        occurred_at: { type: string, format: date-time }
+    DocumentForClient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        file_name: { type: string }
+        size_bytes: { type: integer }
+    ClientCaseSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        court: { type: string }
+        status: { oneOf: [{ $ref: '#/components/schemas/ClientStatus' }, { type: 'null' }] }
+        status_changed_at: { type: [string, 'null'], format: date-time }
+        next_hearing: { oneOf: [{ $ref: '#/components/schemas/HearingForClient' }, { type: 'null' }] }
+        lawyer: { $ref: '#/components/schemas/Lawyer' }
+    ClientCase:
+      allOf:
+        - $ref: '#/components/schemas/ClientCaseSummary'
+        - type: object
+          description: Never contains notes, internal documents, unshared outcomes or other clients' data
+          properties:
+            hearings:
+              type: array
+              items: { $ref: '#/components/schemas/HearingForClient' }
+            timeline:
+              type: array
+              items: { $ref: '#/components/schemas/TimelineEntryForClient' }
+            documents:
+              type: array
+              items: { $ref: '#/components/schemas/DocumentForClient' }
+            access:
+              type: object
+              properties:
+                advocate_name: { type: string }
+                since: { type: string, format: date-time }
+                other_people_with_access: { type: integer }
+    ClientDashboard:
+      type: object
+      properties:
+        cases:
+          type: array
+          items: { $ref: '#/components/schemas/ClientCaseSummary' }
+        unread_updates: { type: integer }
+        latest_updates:
+          type: array
+          maxItems: 5
+          items: { $ref: '#/components/schemas/ClientUpdate' }
+    ClientUpdate:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        case_id: { type: string, format: uuid }
+        kind: { type: string }
+        message: { type: string }
+        created_at: { type: string, format: date-time }
+        read: { type: boolean }
+    ClientQuestion:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [question, update_request] }
+        text: { type: string }
+        sent_at: { type: string, format: date-time }
+        reply_text: { type: [string, 'null'] }
+        replied_at: { type: [string, 'null'], format: date-time }
+        reply_read: { type: boolean }
+    ClientQuestionAdvocate:
+      allOf:
+        - $ref: '#/components/schemas/ClientQuestion'
+        - type: object
+          properties:
+            client_name: { type: string }
+    TimelineEntryAdvocate:
+      allOf:
+        - $ref: '#/components/schemas/TimelineEntryForClient'
+        - type: object
+          properties:
+            shared_with_client: { type: boolean }
+    ClientAwareAnswer:
+      type: object
+      description: The feature 001 answer, plus two fields for petitioners
+      required: [outcome, disclaimer]
+      properties:
+        outcome: { type: string, enum: [cited, no_reliable_source] }
+        paragraphs:
+          type: array
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              citation_numbers: { type: array, items: { type: integer } }
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              number: { type: integer }
+              label: { type: string }
+              source_url: { type: [string, 'null'] }
+        message: { type: [string, 'null'] }
+        disclaimer: { type: string }
+        case_specific_notice:
+          type: [string, 'null']
+          description: Set when the question looks like it is about the client's own case
+        lawyer_reminder:
+          type: [string, 'null']
+          description: Always present for petitioners, a standing reminder to ask their lawyer

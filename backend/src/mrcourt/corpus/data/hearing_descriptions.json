@@ -1,0 +1,35 @@
+{
+  "review_status": "UNVERIFIED general wording written for development. A lawyer must review every entry before it is shown to real clients; until then it is switched off in production.",
+  "kinds": [
+    {
+      "key": "bail",
+      "keywords": ["bail"],
+      "text": "At a bail hearing, the court considers whether a person who has been arrested, or may be arrested, can be released while the case continues, and on what conditions. The court hears both sides before deciding."
+    },
+    {
+      "key": "order_judgment",
+      "keywords": ["order", "judgment", "judgement", "pronouncement", "verdict"],
+      "text": "On a date fixed for an order or judgment, the court announces its decision. The lawyers may not need to speak. The decision is usually available in writing afterwards."
+    },
+    {
+      "key": "arguments",
+      "keywords": ["argument"],
+      "text": "At the arguments stage, each side's lawyer explains to the court how the evidence and the law support their side. The judge may ask questions. The court often keeps its decision for a later date."
+    },
+    {
+      "key": "evidence",
+      "keywords": ["evidence", "witness", "examination", "cross-exam"],
+      "text": "At an evidence hearing, witnesses give their statements to the court and the other side may ask them questions. Documents may also be placed on record. This can take more than one hearing."
+    },
+    {
+      "key": "mediation",
+      "keywords": ["mediation", "settlement", "conciliation"],
+      "text": "A mediation or settlement hearing gives both sides a chance to try to resolve the dispute by agreement, with the help of a neutral person. Nothing is decided unless both sides agree."
+    },
+    {
+      "key": "notice_appearance",
+      "keywords": ["notice", "appearance", "summons", "service", "first hearing", "framing"],
+      "text": "At an early hearing, the court checks that the other side has received the papers and has appeared. It usually sets a date for the other side to reply and fixes the next steps. These hearings are often short."
+    }
+  ]
+}

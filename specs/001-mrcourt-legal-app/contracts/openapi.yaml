@@ -1,0 +1,497 @@
+openapi: 3.1.0
+info:
+  title: MrCourt API
+  version: 1.0.0
+  description: >
+    REST API for the MrCourt web app. All endpoints except /auth/* require a session cookie.
+    Resources are scoped to the signed-in user; accessing another user's resource returns 404.
+servers:
+  - url: /api/v1
+security:
+  - sessionCookie: []
+paths:
+  /auth/register:
+    post:
+      summary: Create an account with a chosen role
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201': { description: Account created and signed in }
+        '409': { description: Email or phone already registered }
+  /auth/login:
+    post:
+      summary: Sign in with email or phone plus password
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, password]
+              properties:
+                identifier: { type: string }
+                password: { type: string, format: password }
+      responses:
+        '200': { description: Signed in, session cookie set }
+        '401': { description: Invalid credentials (no detail about which part) }
+        '403': { description: Account deactivated }
+  /auth/otp/request:
+    post:
+      summary: Send a one-time passcode
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier]
+              properties:
+                identifier: { type: string }
+      responses:
+        '202': { description: Passcode sent if the account exists }
+        '429': { description: Too many requests }
+  /auth/otp/verify:
+    post:
+      summary: Sign in with a one-time passcode
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifier, code]
+              properties:
+                identifier: { type: string }
+                code: { type: string, pattern: '^[0-9]{6}$' }
+      responses:
+        '200': { description: Signed in }
+        '401': { description: Invalid or expired code }
+  /auth/logout:
+    post:
+      summary: Sign out
+      responses:
+        '204': { description: Session ended }
+  /me:
+    get:
+      summary: Current user profile, verification status and settings
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+    patch:
+      summary: Update profile or bar registration number
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                full_name: { type: string }
+                bar_registration_number: { type: string }
+      responses:
+        '200': { description: Updated }
+  /me/settings:
+    patch:
+      summary: Update language, reminders, alert timing or theme
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Settings' }
+      responses:
+        '200': { description: Updated settings }
+  /me/data-export:
+    get:
+      summary: Download all data held about the signed-in user (DPDP access and export)
+      responses:
+        '200': { description: JSON export }
+  /me/deactivate:
+    post:
+      summary: Deactivate the account; case records are retained
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [acknowledge_case_retention]
+              properties:
+                acknowledge_case_retention: { type: boolean, const: true }
+      responses:
+        '204': { description: Deactivated }
+        '422': { description: Retention notice not acknowledged }
+  /dashboard:
+    get:
+      summary: Greeting data, stats, upcoming hearings and recent activity
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dashboard' }
+  /cases:
+    get:
+      summary: List cases visible to the user
+      parameters:
+        - { name: q, in: query, schema: { type: string }, description: Matches party, CNR number or court }
+        - { name: status, in: query, schema: { type: string, enum: [active, hearing_soon, closed] } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CaseSummary' }
+    post:
+      summary: Create a case (advocates only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CaseInput' }
+      responses:
+        '201': { description: Created }
+        '403': { description: Petitioners cannot create cases }
+  /cases/{caseId}:
+    parameters:
+      - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Case detail with parties, next hearing and documents
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CaseDetail' }
+        '404': { description: Not found or not visible to this user }
+    patch:
+      summary: Edit or close a case (owner advocate only)
+      requestBody:
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CaseInput' }
+      responses:
+        '200': { description: Updated }
+  /cases/{caseId}/hearings:
+    parameters:
+      - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: List hearings
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Add a hearing (owner advocate only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/HearingInput' }
+      responses:
+        '201': { description: Created }
+  /cases/{caseId}/documents:
+    parameters:
+      - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: List documents
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Upload a document (owner advocate only)
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        '201': { description: Uploaded }
+  /cases/{caseId}/invitations:
+    parameters:
+      - { name: caseId, in: path, required: true, schema: { type: string, format: uuid } }
+    post:
+      summary: Invite a petitioner to view the case (owner advocate only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [contact]
+              properties:
+                contact: { type: string, description: Email or phone }
+      responses:
+        '201': { description: Invitation created }
+  /invitations/{invitationId}/accept:
+    post:
+      summary: Accept an invitation (invited petitioner)
+      parameters:
+        - { name: invitationId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Accepted; owner receives an activity event }
+  /questions:
+    post:
+      summary: Ask a legal question and receive a cited answer or a no-reliable-source answer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text: { type: string, minLength: 1, maxLength: 2000 }
+                case_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Always contains a disclaimer; outcome is `cited` only when every paragraph has a verified citation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Answer' }
+        '422': { description: Empty question }
+  /drafts:
+    get:
+      summary: List drafts (advocates only)
+      parameters:
+        - { name: case_id, in: query, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Generate a draft from a template (advocates only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [template]
+              properties:
+                template: { type: string, enum: [notice, bail, reply, affidavit] }
+                case_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Draft' }
+        '403': { description: Petitioners cannot use drafts }
+  /drafts/{draftId}:
+    parameters:
+      - { name: draftId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      summary: Get a draft
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Draft' }
+    put:
+      summary: Save edits; increments the version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string }
+      responses:
+        '200': { description: Saved }
+  /drafts/{draftId}/export:
+    post:
+      summary: Export a draft; runs only on explicit request
+      parameters:
+        - { name: draftId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format]
+              properties:
+                format: { type: string, enum: [docx, pdf] }
+      responses:
+        '200':
+          description: The generated file
+          content:
+            application/vnd.openxmlformats-officedocument.wordprocessingml.document: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+        '500': { description: Export failed; draft unchanged }
+  /admin/verifications:
+    get:
+      summary: List advocates awaiting Bar Council verification (administrators only)
+      responses:
+        '200': { description: OK }
+  /admin/verifications/{userId}:
+    post:
+      summary: Confirm or reject an advocate's registration number (administrators only)
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision: { type: string, enum: [verified, rejected] }
+      responses:
+        '200': { description: Recorded }
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: mrcourt_session
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [role, full_name, password]
+      properties:
+        role: { type: string, enum: [advocate, petitioner] }
+        full_name: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        password: { type: string, format: password, minLength: 10 }
+        bar_registration_number: { type: string }
+    Settings:
+      type: object
+      properties:
+        language: { type: string }
+        whatsapp_reminders: { type: boolean }
+        hearing_alert_days: { type: integer, minimum: 0, maximum: 14 }
+        theme: { type: string, enum: [system, light, dark] }
+    Me:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        role: { type: string, enum: [advocate, petitioner] }
+        full_name: { type: string }
+        bar_registration_number: { type: string }
+        verification_status: { type: string, enum: [none, pending, verified] }
+        settings: { $ref: '#/components/schemas/Settings' }
+    CaseInput:
+      type: object
+      properties:
+        title: { type: string }
+        cnr_number: { type: string }
+        court: { type: string }
+        status: { type: string, enum: [active, closed] }
+        stage: { type: string }
+        notes: { type: string }
+        parties:
+          type: array
+          items:
+            type: object
+            properties:
+              side: { type: string, enum: [petitioner, respondent] }
+              name: { type: string }
+              is_client: { type: boolean }
+    HearingInput:
+      type: object
+      required: [scheduled_at]
+      properties:
+        scheduled_at: { type: string, format: date-time }
+        court_room: { type: string }
+        purpose: { type: string }
+    CaseSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        cnr_number: { type: string }
+        court: { type: string }
+        status: { type: string, enum: [active, hearing_soon, closed] }
+        next_hearing_at: { type: [string, 'null'], format: date-time }
+    CaseDetail:
+      allOf:
+        - $ref: '#/components/schemas/CaseSummary'
+        - type: object
+          properties:
+            stage: { type: string }
+            court_room: { type: string }
+            parties:
+              type: array
+              items:
+                type: object
+                properties:
+                  side: { type: string }
+                  name: { type: string }
+                  is_client: { type: boolean }
+            documents:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  file_name: { type: string }
+                  size_bytes: { type: integer }
+            notes: { type: string }
+    Dashboard:
+      type: object
+      properties:
+        active_cases: { type: integer }
+        hearings_this_week: { type: integer }
+        drafts_to_review: { type: integer }
+        upcoming_hearings:
+          type: array
+          maxItems: 3
+          items: { $ref: '#/components/schemas/CaseSummary' }
+        recent_activity:
+          type: array
+          items:
+            type: object
+            properties:
+              message: { type: string }
+              created_at: { type: string, format: date-time }
+    Answer:
+      type: object
+      required: [outcome, disclaimer]
+      properties:
+        outcome: { type: string, enum: [cited, no_reliable_source] }
+        paragraphs:
+          type: array
+          description: Empty when outcome is no_reliable_source
+          items:
+            type: object
+            properties:
+              text: { type: string }
+              citation_numbers:
+                type: array
+                minItems: 1
+                items: { type: integer }
+        citations:
+          type: array
+          items:
+            type: object
+            properties:
+              number: { type: integer }
+              label: { type: string, example: 'Negotiable Instruments Act, 1881 · Section 138' }
+              source_url: { type: string, format: uri }
+        message: { type: string, description: Shown when outcome is no_reliable_source }
+        disclaimer: { type: string, example: Informational only, not legal advice. }
+    Draft:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        case_id: { type: string, format: uuid }
+        template: { type: string, enum: [notice, bail, reply, affidavit] }
+        title: { type: string }
+        body: { type: string }
+        version: { type: integer }
+        ai_generated: { type: boolean }
+        last_edited_at: { type: string, format: date-time }
