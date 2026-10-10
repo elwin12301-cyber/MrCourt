@@ -299,6 +299,32 @@ TWILIO_WHATSAPP_FROM=whatsapp:+14155238886  # the sandbox number shown in the co
   scale needs a paid, registered account (in India, sender and template registration applies).
 - The Twilio sender has been tested only against a stand-in, not the live service.
 
+## Deploying on Render
+
+The repository has a `Dockerfile` (builds the website and serves it from the API, one address) and a
+`render.yaml` Blueprint (that web service plus a PostgreSQL database).
+
+1. Sign in at render.com with GitHub, then **New > Blueprint** and choose this repository.
+2. Fill the secret values when asked: `ADMIN_EMAIL` and `ADMIN_PASSWORD` (the first administrator, password at
+   least 12 characters), `FAST2SMS_API_KEY` (text messages), and optionally `VOYAGE_API_KEY`, `SARVAM_API_KEY`,
+   `ANTHROPIC_API_KEY`. `SESSION_SECRET` is generated for you. Never put keys in the repository.
+3. Apply. The first deploy takes several minutes. Sign in at `/login/admin` with the administrator email.
+
+On every start the container runs the database migrations and creates the administrator if none exists. No demo
+accounts or sample legal texts are created in production: add verified legal documents in the Knowledge base.
+
+Limits of the free plans (check Render's current terms):
+- The free web service sleeps when idle, so the first visit after a pause is slow, and the in-app hourly reminder
+  run (`REMINDER_INTERVAL_MINUTES`) does not happen while it sleeps. For reliable reminders use a paid instance or
+  an outside scheduler running `python -m mrcourt.services.reminders`.
+- Uploaded files are stored on the container's disk, which is wiped on every deploy. Use a persistent disk (paid)
+  for case documents.
+- The free database is temporary; move to a paid database before real use.
+- A public sign-up page with a text-message key lets anyone trigger paid texts. Watch your balance.
+
+Tested locally: the Docker image with PostgreSQL 16 + pgvector (migrations, sign-up, sign-in by username, the
+administrator, cases, questions). Not yet tested on Render itself.
+
 ## How answers stay honest
 
 1. The question is matched against the indexed legal passages.

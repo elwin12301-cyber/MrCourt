@@ -1,0 +1,39 @@
+# Render Blueprint: one web service (website + API in a Docker container) and a PostgreSQL database.
+# In Render: New > Blueprint > pick this repository. Fill the values marked "sync: false" when asked.
+services:
+  - type: web
+    name: mrcourt
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: mrcourt-db
+          property: connectionString
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: REMINDER_INTERVAL_MINUTES
+        value: "60"
+      # First administrator, created on the first start (password at least 12 characters).
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Text messages (sign-up codes, password reset, hearing reminders). Without it codes cannot be delivered.
+      - key: FAST2SMS_API_KEY
+        sync: false
+      # Optional services; leave empty to switch the feature off.
+      - key: VOYAGE_API_KEY
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+
+databases:
+  - name: mrcourt-db
+    plan: free
+    databaseName: mrcourt
+    user: mrcourt

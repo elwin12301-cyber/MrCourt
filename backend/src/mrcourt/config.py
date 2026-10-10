@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -55,6 +56,19 @@ class Settings(BaseSettings):
     # public address of the frontend in production. Same-host requests are always allowed.
     allowed_origins: str = "http://localhost:5173"
     environment: str = "development"
+    # Production: the built website (frontend/dist) is served by this app, so pages and API share one address.
+    frontend_dist: str = ""
+    # Minutes between hearing-reminder runs inside the app (0 = off; use an outside scheduler instead).
+    reminder_interval_minutes: int = 0
+
+    @field_validator("database_url")
+    @classmethod
+    def _driver(cls, value: str) -> str:
+        """Hosts such as Render give postgres://... addresses; SQLAlchemy needs the psycopg driver named."""
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+psycopg://" + value[len(prefix):]
+        return value
 
 
 @lru_cache
