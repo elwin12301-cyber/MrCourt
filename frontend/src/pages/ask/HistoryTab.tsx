@@ -1,3 +1,4 @@
+import { RankingExplanation } from '../../components/RankingExplanation';
 import { useDeferredValue, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnswerMessage } from '../../components/ChatMessage';
@@ -89,6 +90,11 @@ function Row({ item, others }: { item: HistoryItem | WorkspaceItem; others: bool
       {open && !others && (
         <div style={{ flexBasis: '100%' }}>
           <Opened id={item.id} />
+        </div>
+      )}
+      {others && item.mode === 'answer' && (
+        <div style={{ flexBasis: '100%' }}>
+          <RankingExplanation questionId={item.id} />
         </div>
       )}
     </li>

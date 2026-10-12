@@ -37,6 +37,23 @@ class LegalSource(IdMixin, TimestampMixin, Base):
     embedding_model: Mapped[str | None] = mapped_column(String(60))  # which model made `embedding`
     read_by_ocr: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     ocr_confidence: Mapped[float | None] = mapped_column(Float)
+    sections: Mapped[list[str] | None] = mapped_column(JSON)  # statute sections/articles on this passage (008)
+    chapter: Mapped[str | None] = mapped_column(String(100))
+
+    document = relationship("KnowledgeDocument", viewonly=True, lazy="select")
+
+    # Read by the answer ranker (feature 009): details of the passage's document, when mapped.
+    @property
+    def court(self) -> str | None:
+        return self.document.court if self.document is not None else None
+
+    @property
+    def decided_on(self):  # type: ignore[no-untyped-def]
+        return self.document.decided_on if self.document is not None else None
+
+    @property
+    def doc_type(self) -> str | None:
+        return self.document.doc_type if self.document is not None else None
 
 
 class Question(IdMixin, TimestampMixin, Base):
@@ -63,6 +80,7 @@ class Answer(IdMixin, TimestampMixin, Base):
     disclaimer: Mapped[str] = mapped_column(String(200), nullable=False)
     answer_mode: Mapped[str] = mapped_column(String(10), default="passages", nullable=False)  # full | passages
     steps: Mapped[list[dict[str, object]] | None] = mapped_column(JsonType)
+    ranking: Mapped[dict[str, object] | None] = mapped_column(JsonType)  # why each source ranked where it did
 
     question: Mapped[Question] = relationship(back_populates="answer")
     citations: Mapped[list["AnswerCitation"]] = relationship(

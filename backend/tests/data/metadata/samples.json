@@ -1,0 +1,112 @@
+{
+  "about": "FICTIONAL documents in the layout of Indian court papers, for testing metadata mapping (feature 008). All names, numbers and facts are invented.",
+  "documents": [
+    {
+      "id": "hc_second_appeal",
+      "title": "Second appeal judgment",
+      "kind": "note",
+      "pages": [
+        "S.A.No.2207 of 2018\nIN THE HIGH COURT OF JUDICATURE AT MADRAS\nRESERVED ON : 11.02.2024\nDELIVERED ON : 19.03.2024\nCORAM\nTHE HONOURABLE MR. JUSTICE K.ARUNACHALAM\nS.A.No.2207 of 2018\nM.Velan ... Appellant\nVs\n1.S.Ponni\n2.R.Kathir ... Respondents\nPrayer: Second Appeal filed under Section 100 of the Code of Civil Procedure against the judgment and decree.",
+        "The plaintiff claimed title under a sale deed. Section 53A of the Transfer of Property Act was relied upon. The first appellate court reversed the findings.",
+        "For the reasons stated above, the Second Appeal is dismissed. No costs."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["Madras High Court", "found"], "case_number": ["S.A. 2207/2018", "found"],
+        "decided_on": ["2024-03-19", "found"], "judges": [["K.Arunachalam"], "found"],
+        "parties": [{"petitioner": ["M.Velan"], "respondent": ["S.Ponni", "R.Kathir"]}, "found"],
+        "outcome": ["dismissed", "found"], "language": ["en", "found"], "text_quality": ["readable", "found"],
+        "acts": [[{"act": "CPC", "section": "100"}, {"act": "TPA", "section": "53A"}], "found"]
+      }
+    },
+    {
+      "id": "writ_order",
+      "title": "Writ order",
+      "kind": "note",
+      "pages": [
+        "W.P.No.5512 of 2020\nIN THE HIGH COURT OF JUDICATURE AT MADRAS\nDATED: 04.08.2021\nCORAM:\nTHE HONOURABLE MRS. JUSTICE L.MEENAKSHI\nA.Selvi ... Petitioner\nVs\n1. The District Collector, Erode District.\n2. The Tahsildar, Perundurai. ... Respondents\nPRAYER: Writ Petition filed under Article 226 of the Constitution of India.\nORDER",
+        "The petitioner seeks a direction to consider the representation. In the result, the writ petition is allowed. No costs."
+      ],
+      "expected": {
+        "doc_type": ["order", "found"], "court": ["Madras High Court", "found"], "case_number": ["W.P. 5512/2020", "found"],
+        "decided_on": ["2021-08-04", "found"], "judges": [["L.Meenakshi"], "found"], "outcome": ["allowed", "found"],
+        "acts": [[{"act": "CONSTITUTION", "section": "226"}], "found"]
+      }
+    },
+    {
+      "id": "district_suit",
+      "title": "Suit judgment",
+      "kind": "note",
+      "pages": [
+        "IN THE COURT OF THE PRINCIPAL DISTRICT MUNSIF, TIRUPPUR\nPresent: Thiru. V.Ramesh, B.A., B.L., Principal District Munsif\nO.S.No.312 of 2015\nJUDGMENT\nP.Kumar ... Plaintiff\nVs\nT.Mani ... Defendant\nThis suit is for permanent injunction.",
+        "In the result, the suit is decreed with costs. Pronounced by me in open court on this the 12th day of June 2017."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["District Munsif Court, Tiruppur", "found"],
+        "case_number": ["O.S. 312/2015", "found"], "outcome": ["decreed", "found"],
+        "parties": [{"petitioner": ["P.Kumar"], "respondent": ["T.Mani"]}, "found"]
+      }
+    },
+    {
+      "id": "sale_deed",
+      "title": "Sale deed",
+      "kind": "note",
+      "pages": [
+        "SALE DEED\nThis Deed of Sale is executed on this 3rd day of May 2012 by R.Devi (Vendor) in favour of S.Arun (Purchaser) for a sale consideration of Rs.5,00,000/-.\nSCHEDULE OF PROPERTY: Survey No. 44/2, Avinashi Village."
+      ],
+      "expected": {
+        "doc_type": ["deed", "found"], "court": [null, "not_found"], "case_number": [null, "not_found"],
+        "judges": [null, "not_found"], "outcome": [null, "not_found"]
+      }
+    },
+    {
+      "id": "cross_examination",
+      "title": "DW-1 cross",
+      "kind": "note",
+      "pages": [
+        "O.S.No.98 of 2014\nD.W.1 - Cross examination by the counsel for the plaintiff\nI know the suit property. It is true that I did not pay the tax."
+      ],
+      "expected": {
+        "doc_type": ["deposition", "found"], "case_number": ["O.S. 98/2014", "found"], "outcome": [null, "not_found"]
+      }
+    },
+    {
+      "id": "petition",
+      "title": "Commission petition",
+      "kind": "note",
+      "pages": [
+        "IN THE COURT OF THE SUBORDINATE JUDGE, COIMBATORE\nI.A.No.77 of 2019 in O.S.No.15 of 2018\nPETITION FILED UNDER ORDER 26 RULE 9 OF CPC\nThe petitioner prays that this Hon'ble Court may be pleased to appoint an Advocate Commissioner."
+      ],
+      "expected": {
+        "doc_type": ["petition", "found"], "court": ["Sub Court, Coimbatore", "found"], "outcome": [null, "not_found"]
+      }
+    },
+    {
+      "id": "statute_page",
+      "title": "Constitution of India",
+      "kind": "act_section",
+      "pages": [
+        "THE CONSTITUTION OF INDIA\n(Part III.—Fundamental Rights)\n21. Protection of life and personal liberty.—No person shall be deprived of his life or personal liberty except according to procedure established by law.\n21A. Right to education.—The State shall provide free and compulsory education.",
+        "17. Abolition of Untouchability. 18. Abolition of titles. 19. Protection of certain rights regarding freedom of speech, etc. 20. Protection in respect of conviction for offences. 21. Protection of life and personal liberty. 22. Protection against arrest"
+      ],
+      "expected": {"doc_type": ["statute", "found"], "page_sections": [["21", "21A"], []]}
+    },
+    {
+      "id": "tamil_unicode",
+      "title": "தீர்ப்பு",
+      "kind": "note",
+      "pages": [
+        "மாவட்ட நீதிமன்றம், ஈரோடு\nஅ.வ.எண். 45/2016\nதீர்ப்பு\nவாதி தரப்பில் தாக்கல் செய்யப்பட்ட ஆவணங்கள் பரிசீலிக்கப்பட்டன. வழக்கு தள்ளுபடி செய்யப்படுகிறது."
+      ],
+      "expected": {"language": ["ta", "found"], "text_quality": ["readable", "found"]}
+    },
+    {
+      "id": "broken_encoding",
+      "title": "O.S. 581 judgement",
+      "kind": "note",
+      "pages": [
+        "{pfr &atlc, o fr dr,'.,- e..fir*iLo duo'u S,$1uli. ptl , M,B.$n<r a.,d dlma)t 6Wz er dv. me urgr urtapy dsevn, $. 6ro., tppdmrro mnad.r.- e-F)aimdwd: fi$ugiJ, e8c..,ifrnsarb -6 eJcffb gsi Cr-nr-r fgillfl+ fi ZBd fin & 4urngrfi .dtga,Ln Wfic oubLl al.ghig artfu,, GlLnurfllgGzuog6ur ucirefl soh GlLor--rfl gGzuognn Gioeir$lmouu ueir6rfls6h oflgriqryrh"
+      ],
+      "expected": {"text_quality": ["unreadable", "found"], "court": [null, "not_found"], "judges": [null, "not_found"], "case_number": ["O.S. 581", "likely"]}
+    }
+  ]
+}

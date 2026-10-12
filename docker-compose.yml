@@ -6,7 +6,7 @@ services:
       POSTGRES_PASSWORD: mrcourt
       POSTGRES_DB: mrcourt
     ports:
-      - "5432:5432"
+      - "${MRCOURT_DB_PORT:-5432}:5432"
     volumes:
       - dbdata:/var/lib/postgresql/data
 

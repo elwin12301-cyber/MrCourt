@@ -10,6 +10,8 @@ export interface Passage {
   read_by_ocr: boolean;
   ocr_confidence: number | null;
   scope: 'shared' | 'private';
+  details?: Record<string, unknown> | null;
+  details_label?: string | null;
 }
 
 export function usePassage(id: string | null | undefined, enabled: boolean) {

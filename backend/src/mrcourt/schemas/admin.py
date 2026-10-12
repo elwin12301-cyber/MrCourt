@@ -156,3 +156,34 @@ class CaseFull(BaseModel):
     timeline: list[AdminTimelineEntry]
     clients: list[AdminClient]
     client_questions: list[AdminQuestion]
+
+
+class RankingScores(BaseModel):
+    keyword: float
+    meaning: float
+    rerank: float | None
+    combined: float
+
+
+class RankingSignal(BaseModel):
+    name: str
+    label: str
+    value: float | str
+
+
+class RankedPassage(BaseModel):
+    position: int
+    hidden: bool  # another user's private document: no label, no case or person named
+    label: str | None
+    pinned: bool
+    scores: RankingScores
+    signals: list[RankingSignal]
+
+
+class RankingExplanation(BaseModel):
+    question_id: uuid.UUID
+    recorded: bool
+    mode: str | None = None
+    question_type: str | None = None
+    references: list[str] = Field(default_factory=list)
+    passages: list[RankedPassage] = Field(default_factory=list)

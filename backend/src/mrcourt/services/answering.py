@@ -49,6 +49,7 @@ class AnswerResult:
     answer_mode: str = "passages"  # "full" when a model wrote the answer, else cited passages only
     search_mode: str = "keywords"  # "meaning" when meaning-based search took part
     source_note: str | None = None  # which language the sources are in, when it differs from the question's
+    ranking: dict[str, object] | None = None  # why each source ranked where it did (feature 009)
 
 
 class AnswerGenerator(Protocol):
@@ -125,38 +126,65 @@ def no_source(answer_mode: str = "passages", search_mode: str = "keywords") -> A
     )
 
 
-def answer_question(db: Session, question: str, user: User | None = None) -> AnswerResult:
-    """`user` limits retrieval to shared passages plus that person's own private notes."""
+NO_FILTER_MATCH = "No source matches the filters you chose. Try fewer filters."
+
+
+def answer_question(
+    db: Session, question: str, user: User | None = None, filters: dict[str, object] | None = None
+) -> AnswerResult:
+    """`user` limits retrieval to shared passages plus that person's own private notes; `filters` (document
+    details: type, court, year, act, section, case) narrow the sources further."""
     settings = get_settings()
-    found = search(db, question, user, limit=5, min_score=settings.min_retrieval_score)
+    found = search(db, question, user, limit=5, min_score=settings.min_retrieval_score, filters=filters)
     hits, search_mode = found.hits, found.mode
+    # A section or case the question names but no source contains: say so, never pass another off as it.
+    missing = missing_note(found.missing_references)
     generator = get_generator()
     mode = "passages" if isinstance(generator, ExtractiveGenerator) else "full"
-    if not hits:
+
+    def unanswered() -> AnswerResult:
         result = no_source(mode, search_mode)
+        result.ranking = found.ranking
+        if missing:
+            result.message = f"{missing} {NO_SOURCE_MESSAGE}"
+        return result
+
+    if not hits:
+        result = unanswered()
+        if filters and any(filters.values()):
+            result.message = f"{NO_FILTER_MATCH} {result.message}"
+            return result
         notice = keyword_only_notice(question) if search_mode == "keywords" else None
         if notice:
-            result.message = f"{NO_SOURCE_MESSAGE} {notice}"
+            result.message = f"{result.message} {notice}"
         return result
 
     passages = [h.source for h in hits]
     generated = generator.generate(question, passages)
     if not generated:
-        return no_source(mode, search_mode)
+        return unanswered()
 
     by_id: dict[uuid.UUID, LegalSource] = {p.id: p for p in passages}
     verified = verify(generated, by_id)  # type: ignore[arg-type]
     if verified is None:
         logger.warning("Generated answer failed citation verification")
-        return no_source(mode, search_mode)
+        return unanswered()
     return AnswerResult(
         outcome="cited",
         paragraphs=verified.paragraphs,
         citations=list(verified.citations),  # type: ignore[arg-type]
+        message=missing,
         answer_mode=mode,
         search_mode=search_mode,
         source_note=source_language_note(question, [p.text for p in verified.citations]),  # type: ignore[attr-defined]
+        ranking=found.ranking,
     )
+
+
+def missing_note(labels: list[str]) -> str | None:
+    if not labels:
+        return None
+    return f"Not found in the sources: {', '.join(labels)}. The sources below are related, not that provision."
 
 
 def clean_question(text: str) -> str:

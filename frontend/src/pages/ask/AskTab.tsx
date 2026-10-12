@@ -7,6 +7,7 @@ import {
   UserMessage,
 } from '../../components/ChatMessage';
 import { Icon } from '../../components/Icon';
+import { SourceFilters } from '../../components/SourceFilters';
 import { VoiceButton, VoiceStatus } from '../../components/VoiceButton';
 import { Pill } from '../../components/ui';
 import { useServerVoice } from '../../hooks/useServerVoice';
@@ -14,6 +15,7 @@ import { useSpeechInput } from '../../hooks/useSpeechInput';
 import { ApiError } from '../../services/api';
 import { ASSISTANT_SUGGESTIONS, type AssistantReply, runAssistant, useAssistantStatus } from '../../services/assistant';
 import { useMe } from '../../services/auth';
+import type { SourceFilterValues } from '../../services/knowledge';
 import { type Answer, type InputMethod, SUGGESTIONS, askQuestion } from '../../services/questions';
 
 type Entry =
@@ -31,6 +33,7 @@ export default function AskTab() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [assistantMode, setAssistantMode] = useState(false);
+  const [filters, setFilters] = useState<SourceFilterValues>({});
   const nextId = useRef(1);
   const bottom = useRef<HTMLDivElement>(null);
   const status = useAssistantStatus();
@@ -53,7 +56,7 @@ export default function AskTab() {
       setBusy(true);
       let replacement: Entry;
       try {
-        const answer = viaAssistant ? await runAssistant(text, method) : await askQuestion(text, caseId, method);
+        const answer = viaAssistant ? await runAssistant(text, method) : await askQuestion(text, caseId, method, filters);
         replacement = { id: pendingId, kind: 'answer', answer };
       } catch (error) {
         replacement = {
@@ -68,7 +71,7 @@ export default function AskTab() {
       setEntries((e) => e.map((x) => (x.id === pendingId ? replacement : x)));
       setBusy(false);
     },
-    [caseId],
+    [caseId, filters],
   );
 
   // A question carried over from the dashboard quick-ask card or from History ("Ask again") is
@@ -186,6 +189,14 @@ export default function AskTab() {
         </button>
       </form>
       <VoiceStatus voice={voice} />
+      {!assistantMode && (
+        <details className="explain" style={{ maxWidth: 820 }}>
+          <summary>
+            Limit sources{Object.values(filters).some(Boolean) ? ` (${Object.values(filters).filter(Boolean).length} on)` : ''}
+          </summary>
+          <SourceFilters value={filters} onChange={setFilters} idPrefix="ask-filter" />
+        </details>
+      )}
       {speechReady && (
         <label className="fine" style={{ display: 'flex', gap: 8, alignItems: 'center', margin: 0 }}>
           <input type="checkbox" checked={serverVoiceOn} onChange={(e) => setServerVoiceOn(e.target.checked)} />

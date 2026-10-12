@@ -20,6 +20,18 @@ class Settings(BaseSettings):
     min_vector_score: float = 0.2  # a floor only: raw similarity cannot tell relevant from unrelated
     rerank_model: str = "rerank-2.5"
     min_rerank_score: float = 0.5  # what a meaning-only passage must score to be cited (measured, see quality-results)
+    # Hybrid ranking (feature 009). "rrf" keeps the earlier rank-fusion ordering (baseline and rollback).
+    ranking_mode: str = "hybrid"
+    rank_w_keyword: float = 0.35
+    rank_w_meaning: float = 0.15
+    rank_w_rerank: float = 0.50
+    rank_boost_section: float = 0.25  # passage mentions the section named in the question
+    rank_boost_type: float = 0.10  # document type suits the kind of question
+    rank_boost_court: float = 0.08  # passage's court is named in the question
+    rank_boost_own_case: float = 0.15  # advocate's own case document, for questions about their case
+    rank_recency_max: float = 0.05  # newest judgments; nothing at 20 years or older
+    rank_per_document: int = 2  # at most this many cited passages from one document
+    rerank_candidates: int = 20
     sarvam_api_key: str = ""  # speech to text for Indian languages
     stt_model: str = "saaras:v4"
     ocr_languages: str = "eng+tam"  # Tesseract language packs, joined with +

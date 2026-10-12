@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { SourceFilterValues } from './knowledge';
 
 export interface Citation {
   number: number;
@@ -6,6 +7,8 @@ export interface Citation {
   source_url: string | null;
   /** Lets the reader open the cited passage; null once the source has been removed. */
   passage_id?: string | null;
+  /** Short document details, e.g. "Judgment · Madras High Court · 07 Apr 2025". */
+  details?: string | null;
 }
 
 export interface AnswerParagraph {
@@ -35,8 +38,25 @@ export interface Answer {
 
 export type InputMethod = 'typed' | 'voice';
 
-export function askQuestion(text: string, caseId?: string, inputMethod: InputMethod = 'typed'): Promise<Answer> {
-  return api.post<Answer>('/questions', { text, case_id: caseId, input_method: inputMethod });
+export function askQuestion(
+  text: string,
+  caseId?: string,
+  inputMethod: InputMethod = 'typed',
+  filters?: SourceFilterValues,
+): Promise<Answer> {
+  const chosen = filters
+    ? Object.fromEntries(
+        Object.entries(filters)
+          .filter(([, v]) => v)
+          .map(([k, v]) => [k, k === 'year' ? Number(v) : v]),
+      )
+    : {};
+  return api.post<Answer>('/questions', {
+    text,
+    case_id: caseId,
+    input_method: inputMethod,
+    ...(Object.keys(chosen).length ? { filters: chosen } : {}),
+  });
 }
 
 /** Suggested questions, as in the prototype. */

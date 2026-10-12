@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from mrcourt.services import metadata
 from mrcourt.api.deps import CurrentUser, DbSession
 from mrcourt.models import Answer, AnswerCitation, Question
 from mrcourt.schemas.questions import AnswerOut, CitationOut, ParagraphOut, QuestionIn
@@ -17,7 +18,7 @@ def ask(data: QuestionIn, user: CurrentUser, db: DbSession) -> AnswerOut:
     if data.case_id is not None:
         get_visible_case(db, user, data.case_id)  # 404 if the user cannot see that case
 
-    result = answer_question(db, data.text, user)
+    result = answer_question(db, data.text, user, data.filters.model_dump() if data.filters else None)
 
     question = Question(
         user_id=user.id, case_id=data.case_id, text=data.text, input_method=data.input_method
@@ -29,6 +30,7 @@ def ask(data: QuestionIn, user: CurrentUser, db: DbSession) -> AnswerOut:
         ],
         disclaimer=result.disclaimer,
         answer_mode=result.answer_mode,
+        ranking=result.ranking,
     )
     question.answer = answer
     for number, source in enumerate(result.citations, start=1):
@@ -52,7 +54,13 @@ def ask(data: QuestionIn, user: CurrentUser, db: DbSession) -> AnswerOut:
         outcome=result.outcome,  # type: ignore[arg-type]
         paragraphs=[ParagraphOut(**p) for p in answer.paragraphs],
         citations=[
-            CitationOut(number=i, label=s.citation_label, source_url=s.source_url, passage_id=s.id)
+            CitationOut(
+                number=i,
+                label=s.citation_label,
+                source_url=s.source_url,
+                passage_id=s.id,
+                details=metadata.short_label(s.document, s),
+            )
             for i, s in enumerate(result.citations, start=1)
         ],
         message=result.message,

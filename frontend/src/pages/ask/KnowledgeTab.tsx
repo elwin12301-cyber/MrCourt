@@ -1,5 +1,7 @@
 import { type FormEvent, useState } from 'react';
+import { DocumentDetails } from '../../components/DocumentDetails';
 import { Icon } from '../../components/Icon';
+import { SourceFilters } from '../../components/SourceFilters';
 import { Button, Card, Chip } from '../../components/ui';
 import { ApiError } from '../../services/api';
 import { useMe } from '../../services/auth';
@@ -9,8 +11,10 @@ import {
   type KnowledgeDocument,
   KIND_LABEL,
   STATUS_LABEL,
+  type SourceFilterValues,
   useAddDocument,
   useDocuments,
+  useRemap,
   useRemoveDocument,
 } from '../../services/knowledge';
 
@@ -108,11 +112,15 @@ function AddForm({ admin, onDone }: { admin: boolean; onDone: () => void }) {
 function Row({ doc }: { doc: KnowledgeDocument }) {
   const remove = useRemoveDocument();
   const [confirming, setConfirming] = useState(false);
+  const [open, setOpen] = useState(false);
   return (
+    <>
     <tr>
       <td>
         <b>{doc.title}</b>
         <small>{doc.citation}</small>
+        {doc.details?.short && <small>{doc.details.short}</small>}
+        {doc.details?.text_quality === 'unreadable' && <small>Text could not be read: needs OCR</small>}
       </td>
       <td>{KIND_LABEL[doc.kind]}</td>
       <td>{doc.scope === 'shared' ? 'Shared' : 'Private to you'}</td>
@@ -122,6 +130,11 @@ function Row({ doc }: { doc: KnowledgeDocument }) {
         {doc.status_reason && <small>{doc.status_reason}</small>}
       </td>
       <td>
+        {doc.status === 'ready' && (
+          <Button small variant="ghost" aria-expanded={open} aria-label={`${open ? 'Hide' : 'Show'} details of ${doc.title}`} onClick={() => setOpen((v) => !v)}>
+            {open ? 'Hide details' : 'Details'}
+          </Button>
+        )}
         {doc.can_remove &&
           (confirming ? (
             <span role="group" aria-label={`Remove ${doc.title}?`} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -139,6 +152,32 @@ function Row({ doc }: { doc: KnowledgeDocument }) {
           ))}
       </td>
     </tr>
+    {open && (
+      <tr className="detailsrow">
+        <td colSpan={5}>
+          <DocumentDetails id={doc.id} title={doc.title} />
+        </td>
+      </tr>
+    )}
+    </>
+  );
+}
+
+function RemapButton({ admin }: { admin: boolean }) {
+  const remap = useRemap();
+  const summary = remap.data;
+  return (
+    <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+      <Button variant="ghost" onClick={() => remap.mutate()} disabled={remap.isPending}>
+        {remap.isPending ? 'Mapping…' : admin ? 'Map shared details again' : 'Map my documents again'}
+      </Button>
+      {summary && (
+        <span role="status" className="fine">
+          {summary.documents} documents mapped
+          {summary.unreadable ? `, ${summary.unreadable} could not be read (need OCR)` : ''}. Your corrections were kept.
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -147,7 +186,8 @@ export default function KnowledgeTab() {
   const me = useMe().data;
   const [search, setSearch] = useState('');
   const [adding, setAdding] = useState(false);
-  const { data, isLoading, isError } = useDocuments(search);
+  const [filters, setFilters] = useState<SourceFilterValues>({});
+  const { data, isLoading, isError } = useDocuments(search, filters);
   const canAdd = me?.role === 'admin' || me?.role === 'advocate';
 
   return (
@@ -163,7 +203,9 @@ export default function KnowledgeTab() {
           />
         </div>
         {canAdd && !adding && <Button onClick={() => setAdding(true)}>{me?.role === 'admin' ? 'Add a source' : 'Add a private note'}</Button>}
+        {canAdd && <RemapButton admin={me?.role === 'admin'} />}
       </div>
+      <SourceFilters value={filters} onChange={setFilters} idPrefix="kb-filter" />
       {adding && <AddForm admin={me?.role === 'admin'} onDone={() => setAdding(false)} />}
       {/* The table scrolls sideways on narrow screens, so the region must be reachable by keyboard. */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}

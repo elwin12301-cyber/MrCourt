@@ -148,6 +148,10 @@ a.nav,a.back{text-decoration:none}
 .explain{margin-top:6px;font-size:12px;color:var(--muted)}
 .explain summary{cursor:pointer;color:var(--gold-ink);font-weight:600;width:fit-content}
 .explain p{margin:6px 0 0}
+.rankexp{margin:6px 0 0;padding-left:20px;color:var(--ink)}
+.rankexp li{margin:6px 0}
+.rankexp .fine{display:block;margin:2px 0 0}
+.rankexp .badge{margin-left:6px}
 .tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
 .tl li{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
 .tl li:first-child{border-top:0;padding-top:0}
@@ -195,3 +199,14 @@ a.statlink:hover,a.statlink:focus-visible{border-color:var(--gold)}
 .ka-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .btn.outline{background:var(--surface);border:1.5px solid var(--line);color:var(--ink)}
 .btn.outline:hover{border-color:var(--gold)}
+
+/* Document details and filters (feature 008) */
+.filters{display:flex;flex-wrap:wrap;gap:10px 14px;border:0;padding:0;margin:0;align-items:flex-end}
+.filters .field{flex:1 1 150px;max-width:220px;margin:0}
+.detailsrow td{background:var(--tint);cursor:default}
+.docdetails dl{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:6px 16px;margin:0 0 10px}
+.docdetails dt{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+.docdetails dd{margin:0}
+.docdetails dd small{color:var(--muted)}
+.srcdetails{display:block;color:var(--muted);font-size:12px;font-weight:400}
+@media (max-width:640px){.docdetails dl{grid-template-columns:1fr}.filters .field{max-width:none}}

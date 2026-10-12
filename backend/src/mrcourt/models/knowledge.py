@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Uuid
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, UniqueConstraint, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from mrcourt.db.base import Base, IdMixin, TimestampMixin
@@ -28,6 +28,28 @@ class KnowledgeDocument(IdMixin, TimestampMixin, Base):
     passage_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     ocr_pages: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     created_by: Mapped[uuid.UUID | None] = mapped_column(Uuid, ForeignKey("users.id"))
+    # Mapped details (feature 008). `details` holds every field with its confidence; the columns below mirror
+    # the current values that filters use.
+    details: Mapped[dict[str, object] | None] = mapped_column(JsonType)
+    doc_type: Mapped[str | None] = mapped_column(String(20), index=True)
+    court: Mapped[str | None] = mapped_column(String(200), index=True)
+    case_number: Mapped[str | None] = mapped_column(String(60), index=True)
+    decided_on: Mapped[date | None] = mapped_column(Date)
+    language: Mapped[str | None] = mapped_column(String(10))
+    text_quality: Mapped[str | None] = mapped_column(String(12))
+
+
+class DocumentReference(IdMixin, Base):
+    """An Act (and section) a document refers to, for filtering (feature 008)."""
+
+    __tablename__ = "document_references"
+    __table_args__ = (UniqueConstraint("document_id", "act", "section", name="uq_document_reference"),)
+
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    act: Mapped[str] = mapped_column(String(30), nullable=False)
+    section: Mapped[str | None] = mapped_column(String(20))
 
 
 class ProposedAction(IdMixin, Base):

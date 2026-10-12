@@ -5,9 +5,10 @@ advocate's private notes belong to that advocate and are used only for their own
 reads passages (LegalSource rows); this module keeps documents and their passages together.
 """
 
+import logging
 import shutil
 import uuid
-from datetime import timedelta
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import HTTPException, status
@@ -16,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from mrcourt.config import get_settings
 from mrcourt.db.base import utcnow
-from mrcourt.models import AnswerCitation, KnowledgeDocument, LegalSource, User
+from mrcourt.models import AnswerCitation, DocumentReference, KnowledgeDocument, LegalSource, User
 from mrcourt.services import audit
 from mrcourt.services.cases import aware
 from mrcourt.services.embeddings import embed_passages
@@ -50,10 +51,116 @@ def visible_documents(user: User):  # type: ignore[no-untyped-def]
     return select(KnowledgeDocument).where(condition)
 
 
+def apply_filters(query, filters: dict[str, object] | None):  # type: ignore[no-untyped-def]
+    """Document details filters (feature 008): type, court, year, act, section, case."""
+    if not filters:
+        return query
+    if value := filters.get("type"):
+        query = query.where(KnowledgeDocument.doc_type == value)
+    if value := filters.get("court"):
+        query = query.where(KnowledgeDocument.court == value)
+    if value := filters.get("year"):
+        year = int(value)  # type: ignore[call-overload]
+        query = query.where(
+            KnowledgeDocument.decided_on >= date(year, 1, 1), KnowledgeDocument.decided_on <= date(year, 12, 31)
+        )
+    if value := filters.get("case"):
+        like = f"%{str(value).strip().lower()}%"
+        query = query.where(
+            or_(func.lower(KnowledgeDocument.case_number).like(like), func.lower(KnowledgeDocument.title).like(like))
+        )
+    act, section = filters.get("act"), filters.get("section")
+    if act or section:
+        refs = select(DocumentReference.document_id)
+        if act:
+            refs = refs.where(DocumentReference.act == str(act).upper())
+        if section:
+            refs = refs.where(DocumentReference.section == str(section).upper())
+        query = query.where(KnowledgeDocument.id.in_(refs))
+    return query
+
+
+def filter_options(db: Session, user: User) -> dict[str, list]:  # type: ignore[type-arg]
+    """Filter values from the documents this person may see only (private values never reach others)."""
+    docs = list(db.scalars(visible_documents(user)))
+    ids = [d.id for d in docs]
+    acts = sorted(set(db.scalars(select(DocumentReference.act).where(DocumentReference.document_id.in_(ids))))) if ids else []
+    return {
+        "types": sorted({d.doc_type for d in docs if d.doc_type}),
+        "courts": sorted({d.court for d in docs if d.court}),
+        "years": sorted({d.decided_on.year for d in docs if d.decided_on}, reverse=True),
+        "acts": acts,
+    }
+
+
+def can_view_details(user: User, doc: KnowledgeDocument) -> bool:
+    if doc.owner_id is not None:
+        return doc.owner_id == user.id
+    return user.role != "petitioner" or doc.status == "ready"
+
+
+def can_edit_details(user: User, doc: KnowledgeDocument) -> bool:
+    if doc.owner_id is not None:
+        return user.role == "advocate" and doc.owner_id == user.id
+    return user.role == "admin"
+
+
+LIST_FIELDS = ("case_numbers", "judges", "acts")
+
+
+def _check(name: str, value: object) -> object:
+    from mrcourt.services import metadata
+
+    if value in (None, "", []):
+        return None
+    if name == "doc_type" and value not in metadata.DOC_TYPES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Choose a type from the list")
+    if name == "outcome" and value not in metadata.OUTCOMES:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Choose an outcome from the list")
+    if name == "decided_on":
+        try:
+            return date.fromisoformat(str(value)).isoformat()
+        except ValueError as exc:
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Give the date as YYYY-MM-DD") from exc
+    if name in LIST_FIELDS:
+        if not isinstance(value, list):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"{name} must be a list")
+        return value[:50]
+    if name == "parties":
+        if not isinstance(value, dict):
+            raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "parties must list petitioner and respondent")
+        return {"petitioner": list(value.get("petitioner", []))[:50], "respondent": list(value.get("respondent", []))[:50]}
+    if not isinstance(value, str) or len(value) > 300:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"{name} must be text of at most 300 characters")
+    return value.strip()
+
+
+def update_details(db: Session, user: User, doc: KnowledgeDocument, fields: dict[str, object]) -> None:
+    """A person's corrections: kept as 'confirmed' and never changed by mapping again."""
+    from mrcourt.services import metadata
+
+    unknown = [n for n in fields if n not in metadata.FIELDS or n == "text_quality"]
+    if unknown:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, f"Unknown field: {', '.join(unknown)}")
+    details = dict(doc.details or {})
+    stamp = utcnow().isoformat()
+    for name, raw in fields.items():
+        details[name] = {"value": _check(name, raw), "confidence": "confirmed", "source": "person", "by": str(user.id), "at": stamp}
+    doc.details = details
+    metadata.apply(db, doc, {})
+    if doc.owner_id is None:
+        audit.record(db, user, "knowledge.details.edit", "document", doc.id, fields=sorted(fields))
+
+
 def list_documents(
-    db: Session, user: User, q: str | None, kind: str | None, status_filter: str | None
+    db: Session,
+    user: User,
+    q: str | None,
+    kind: str | None,
+    status_filter: str | None,
+    filters: dict[str, object] | None = None,
 ) -> list[KnowledgeDocument]:
-    query = visible_documents(user)
+    query = apply_filters(visible_documents(user), filters)
     if q and q.strip():
         like = f"%{q.strip().lower()}%"
         query = query.where(
@@ -199,6 +306,18 @@ def publish_pages(
     doc.status_reason = (
         LOW_CONFIDENCE_NOTE if confidences and sum(confidences) / len(confidences) < LOW_CONFIDENCE else None
     )
+    _map_details(db, doc)
+
+
+def _map_details(db: Session, doc: KnowledgeDocument) -> None:
+    """Feature 008: map the document's details now that its text is in. Never stops a document being ready."""
+    from mrcourt.services import metadata
+
+    try:
+        db.flush()
+        metadata.map_document(db, doc)
+    except Exception:  # noqa: BLE001 - details are an extra; the document stays searchable without them
+        logging.getLogger(__name__).warning("Mapping document details failed", exc_info=True)
 
 
 def process_document(factory: sessionmaker[Session], document_id: uuid.UUID) -> None:
@@ -273,5 +392,6 @@ def ensure_documents(db: Session) -> int:
         db.add(doc)
         db.flush()
         source.document_id = doc.id
+        _map_details(db, doc)
         created += 1
     return created

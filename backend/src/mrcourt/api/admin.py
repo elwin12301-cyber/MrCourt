@@ -16,12 +16,13 @@ from sqlalchemy import and_, or_, select
 
 from mrcourt.api.deps import Admin, DbSession
 from mrcourt.db.base import utcnow
-from mrcourt.models import AuditEntry, User
+from mrcourt.models import AuditEntry, LegalSource, Question, User
 from mrcourt.schemas.admin import (
     AuditPage,
     CaseFull,
     CaseRow,
     Overview,
+    RankingExplanation,
     SuspendIn,
     UserDetail,
     UserPatch,
@@ -118,6 +119,43 @@ def workspace_questions(
     audit.record(db, admin, "history.view", "workspace", None, shown=len(page.items))
     db.commit()
     return page
+
+
+@router.get("/questions/{question_id}/ranking", response_model=RankingExplanation)
+def question_ranking(question_id: uuid.UUID, admin: Admin, db: DbSession) -> RankingExplanation:
+    """Why each source of an answer ranked where it did (feature 009). Passages from anyone's private
+    documents are shown only as hidden rows: their scores, never their title, case or text."""
+    question = db.get(Question, question_id)
+    if question is None or question.answer is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Question not found")
+    stored = question.answer.ranking
+    audit.record(db, admin, "answer.ranking.view", "question", question.id)
+    db.commit()
+    if not stored:
+        return RankingExplanation(question_id=question.id, recorded=False)
+    passages = []
+    for item in stored.get("passages", []):  # type: ignore[union-attr]
+        source = db.get(LegalSource, uuid.UUID(str(item["source_id"])))
+        hidden = source is None or source.owner_id is not None
+        passages.append(
+            {
+                "position": item["position"],
+                "hidden": hidden,
+                "label": None if hidden else source.citation_label,  # type: ignore[union-attr]
+                "pinned": item["pinned"],
+                "scores": item["scores"],
+                # A hidden row keeps only signals that name nothing (no reference text).
+                "signals": [s for s in item["signals"] if not (hidden and s["name"] == "exact_reference")],
+            }
+        )
+    return RankingExplanation(
+        question_id=question.id,
+        recorded=True,
+        mode=stored.get("mode"),  # type: ignore[union-attr]
+        question_type=stored.get("question_type"),  # type: ignore[union-attr]
+        references=list(stored.get("references", [])),  # type: ignore[union-attr]
+        passages=passages,  # type: ignore[arg-type]
+    )
 
 
 @router.get("/users/{user_id}/questions", response_model=HistoryPage)

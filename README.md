@@ -32,8 +32,23 @@ npm install
 npm run dev                                          # http://localhost:5173, proxies /api to :8000
 ```
 
-To use PostgreSQL instead, start it with `docker compose up -d db` and use the `DATABASE_URL`
-from `.env.example` (see "Known gaps": the PostgreSQL path has not been run yet).
+**PostgreSQL (the database used in production, and now in development).** Start it with Docker:
+
+```bash
+docker compose up -d db                     # PostgreSQL 16 with pgvector on port 5432
+MRCOURT_DB_PORT=5433 docker compose up -d db   # if another PostgreSQL already uses 5432 (PowerShell: $env:MRCOURT_DB_PORT=5433)
+```
+
+and put `DATABASE_URL=postgresql+psycopg://mrcourt:mrcourt@127.0.0.1:5433/mrcourt` (your port) in `backend/.env`.
+Use `127.0.0.1`, not `localhost`: on Windows `localhost` can add a ten-second wait to every new connection.
+Then run `alembic upgrade head`. To move an existing SQLite development database across:
+
+```bash
+python scripts/copy_sqlite_to_postgres.py --source sqlite:///./dev.db --target postgresql+psycopg://mrcourt:mrcourt@127.0.0.1:5433/mrcourt
+```
+
+The automated tests still use throw-away SQLite databases (fast and isolated); the Docker image has been run
+against PostgreSQL 16 + pgvector, and the development app runs on it.
 
 Development accounts (fictional, created by the seed command; password `password123`):
 
@@ -325,6 +340,56 @@ Limits of the free plans (check Render's current terms):
 Tested locally: the Docker image with PostgreSQL 16 + pgvector (migrations, sign-up, sign-in by username, the
 administrator, cases, questions). Not yet tested on Render itself.
 
+## Document details (metadata)
+
+Every knowledge document is mapped to standard details when it is added (feature 008): type (statute, judgment,
+order, petition, deed, deposition, notice), court, case numbers and CNR, case title and parties, judges, date,
+Acts and sections referred to, outcome, language, and whether its text could be read at all.
+
+- **Nothing is guessed.** A value is filled only from the document's text; each field says how sure MrCourt is
+  ("Found in the text", "Likely – please check", "Not found", "Confirmed by a person").
+- **Corrections stick.** In the Knowledge base, open **Details** on a document and **Correct details**. Corrections
+  are kept when details are mapped again (**Map my documents again** / **Map shared details again**). Corrections to
+  shared documents are recorded in the audit log.
+- **Filters**: type, court, year, Act, section or article, case number, in the Knowledge base and under
+  **Limit sources** when asking. Filter choices come only from documents you may see.
+- **Citations** show the details in short ("Judgment · Madras High Court · 07 Apr 2025 · S.A. 1106/2019",
+  "Statute · s. 21"), and the ranker (feature 009) uses court, date and type.
+- **Unreadable text**: PDFs whose built-in text uses an old Tamil font encoding come out as gibberish. They are
+  marked "Text could not be read: needs OCR" and left unmapped. Scanning them with OCR (Tesseract with the Tamil
+  pack) is the fix.
+- Map everything again from the command line: `python -m mrcourt.services.metadata --remap`. Check accuracy:
+  `python scripts/check_metadata.py`.
+
+## How answers are ranked
+
+Sources for an answer are found by matching words and by matching meaning, then ordered by a weighted score
+(feature 009):
+
+- **Scores**: word match (`RANK_W_KEYWORD`), meaning match (`RANK_W_MEANING`) and the answer check, a second
+  service that judges whether a passage answers the question (`RANK_W_RERANK`). Weights are shared out when
+  the answer check is unavailable.
+- **Named sections, articles and cases first**: "Section 138 NI Act", "Article 21", "W.P. 11944/2013". A passage
+  that *is* that provision or case is pinned first; one that only mentions it is raised (`RANK_BOOST_SECTION`).
+  A named section that no source contains is reported ("Not found in the sources: ...") and never replaced by
+  another section. Old and new criminal codes (IPC/BNS, CrPC/BNSS) are never treated as the same.
+- **Kind of question**: law and punishment questions prefer statutes, "how have courts decided" prefers
+  judgments (newer first, when the date is known), and an advocate asking about "my case" gets their own case
+  documents first (`RANK_BOOST_TYPE`, `RANK_BOOST_OWN_CASE`, `RANK_RECENCY_MAX`, `RANK_BOOST_COURT`).
+- **Variety**: at most `RANK_PER_DOCUMENT` (2) passages from one document, unless nothing else qualifies.
+- **Safety is unchanged**: only passages the person may see; a passage without word evidence needs the answer
+  check's approval; every citation is checked; "no reliable source" when nothing qualifies.
+- Administrators can open **Why these sources?** under an answer (and in everyone's questions) to see the scores
+  and signals; other users' private documents appear only as hidden rows. Viewing it is recorded in the audit log.
+- `RANKING_MODE=rrf` switches back to the earlier ranker (rollback).
+
+Measure ranking changes with the evaluation set (shared law corpus only):
+
+```bash
+cd backend
+python scripts/evaluate_ranking.py --questions tests/data/ranking_eval_shared.json --mode both     --baseline ../specs/009-hybrid-ranking/eval-baseline.json --grid
+```
+
 ## How answers stay honest
 
 1. The question is matched against the indexed legal passages.
@@ -335,9 +400,9 @@ administrator, cases, questions). Not yet tested on Render itself.
 
 ## Known gaps (read before relying on this)
 
-- **PostgreSQL has not been run.** The environment this was built in had no Docker. All tests ran on
-  SQLite. The initial migration (`backend/alembic/versions/0001_initial_schema.py`), the `pgvector`
-  columns and the PostgreSQL full-text search path are untested.
+- **Automated tests run on SQLite only.** The development app now runs on PostgreSQL 16 + pgvector (all
+  migrations, the copied development data, sign-in, cases and cited answers checked by hand), and the Docker
+  image was checked against it, but the test suites have not been run against PostgreSQL.
 - **The legal corpus is a five-passage development sample, paraphrased from memory.** It is marked
   `UNVERIFIED` and the ingest command refuses to load it in production. Every passage must be checked
   against the official text, and a real corpus (BNS, BNSS, BSA, the Constitution, more of the NI Act,

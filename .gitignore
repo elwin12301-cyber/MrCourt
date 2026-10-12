@@ -47,3 +47,6 @@ knowledge/
 *.db.*
 *.bak
 *.sqlite
+
+# Real case documents: never commit
+docs/

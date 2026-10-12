@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import type { AssistantReply } from '../services/assistant';
+import { useMe } from '../services/auth';
 import type { Answer } from '../services/questions';
 import { AssistantSteps } from './AssistantSteps';
 import { Icon } from './Icon';
 import { CitedSource } from './PassageViewer';
 import { ProposedActionCard } from './ProposedAction';
+import { RankingExplanation } from './RankingExplanation';
 import { Disclaimer } from './ui';
 
 export function SourceChip({ number, label }: { number: number; label: string }) {
@@ -50,6 +52,7 @@ export function ErrorMessage({ text }: { text: string }) {
 /** A cited answer, or the explicit "no reliable source" response. The disclaimer is always shown. */
 export function AnswerMessage({ answer, askLawyerHref }: { answer: Answer | AssistantReply; askLawyerHref?: string }) {
   const reply = 'steps' in answer ? answer : null;
+  const me = useMe().data;
   return (
     <div className="card a">
       <Who />
@@ -66,13 +69,18 @@ export function AnswerMessage({ answer, askLawyerHref }: { answer: Answer | Assi
       {reply && <AssistantSteps steps={reply.steps} />}
       {answer.outcome !== 'no_reliable_source' ? (
         <>
+          {answer.message && (
+            <p className="fine" role="note" style={{ fontWeight: 600 }}>
+              {answer.message}
+            </p>
+          )}
           {answer.paragraphs.map((p, i) => (
             <p key={i}>
               {p.text} {p.citation_numbers.map((n) => `[${n}]`).join('')}
             </p>
           ))}
           {answer.citations.map((c) => (
-            <CitedSource key={c.number} number={c.number} label={c.label} passageId={c.passage_id} />
+            <CitedSource key={c.number} number={c.number} label={c.label} passageId={c.passage_id} details={c.details} />
           ))}
         </>
       ) : (
@@ -84,6 +92,7 @@ export function AnswerMessage({ answer, askLawyerHref }: { answer: Answer | Assi
         </p>
       )}
       {reply?.proposed_action && <ProposedActionCard proposal={reply.proposed_action} />}
+      {me?.is_admin && !reply && answer.question_id && <RankingExplanation questionId={answer.question_id} />}
       <Disclaimer text={answer.disclaimer} />
       {answer.lawyer_reminder && <p className="fine" style={{ margin: '6px 0 0' }}>{answer.lawyer_reminder}</p>}
     </div>
