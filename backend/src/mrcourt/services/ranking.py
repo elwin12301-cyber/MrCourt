@@ -36,9 +36,9 @@ class Candidate:
 
 @dataclass
 class RankSettings:
-    w_keyword: float = 0.35
-    w_meaning: float = 0.15
-    w_rerank: float = 0.50
+    w_keyword: float = 0.10
+    w_meaning: float = 0.0
+    w_rerank: float = 0.90
     boost_section: float = 0.25
     boost_type: float = 0.10
     boost_court: float = 0.08
@@ -92,6 +92,7 @@ def apply_signals(c: Candidate, ctx: Context, rs: RankSettings) -> None:
         found = match(
             ref, instrument=s.instrument or "", section=s.section, label=s.citation_label or "", text=s.text or "",
             sections=getattr(s, "sections", None),
+            case_number=getattr(s, "case_number", None) if ref.kind == "case" else None,
         )
         if found == "exact":
             c.pinned = True
@@ -136,13 +137,14 @@ def _document(c: Candidate) -> object:
 
 
 def diversify(ordered: list[Candidate], per_document: int, limit: int) -> list[Candidate]:
-    """At most `per_document` passages from one document; the rest only when nothing else is left."""
+    """At most `per_document` passages from one document; the rest only when nothing else is left. Pinned
+    passages count too: a question naming a case pins every page of that judgment."""
     chosen: list[Candidate] = []
     held: list[Candidate] = []
     counts: dict[object, int] = {}
     for c in ordered:
         key = _document(c)
-        if c.pinned or counts.get(key, 0) < per_document:
+        if counts.get(key, 0) < per_document:
             chosen.append(c)
             counts[key] = counts.get(key, 0) + 1
         else:

@@ -97,9 +97,17 @@ def _instrument_is(act: str | None, instrument: str) -> bool:
 
 
 def match(
-    ref: Reference, *, instrument: str, section: str | None, label: str, text: str, sections: list[str] | None = None
+    ref: Reference,
+    *,
+    instrument: str,
+    section: str | None,
+    label: str,
+    text: str,
+    sections: list[str] | None = None,
+    case_number: str | None = None,
 ) -> str | None:
-    """'exact' when the passage is the referenced provision or case, 'mentions' when it names it, else None."""
+    """'exact' when the passage is the referenced provision or case, 'mentions' when it names it, else None.
+    `case_number` is the main case number mapped for the passage's document (feature 008)."""
     if ref.kind in ("section", "article"):
         if not _instrument_is(ref.act, instrument):
             return None
@@ -118,7 +126,7 @@ def match(
         if headings and len(re.findall(r"(?:^|\s)\d{1,3}[A-Z]?\.\s+[A-Z][a-z]", text)) <= 4:
             return "mentions"
         return None
-    haystack = f"{label}\n{instrument}\n{text[:4000]}"
+    haystack = f"{case_number or ''}\n{label}\n{instrument}\n{text[:4000]}"
     if ref.cnr:
         return "exact" if ref.cnr in haystack.upper() else None
     for found in CASE_RE.finditer(haystack):

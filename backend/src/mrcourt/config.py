@@ -22,9 +22,9 @@ class Settings(BaseSettings):
     min_rerank_score: float = 0.5  # what a meaning-only passage must score to be cited (measured, see quality-results)
     # Hybrid ranking (feature 009). "rrf" keeps the earlier rank-fusion ordering (baseline and rollback).
     ranking_mode: str = "hybrid"
-    rank_w_keyword: float = 0.35
-    rank_w_meaning: float = 0.15
-    rank_w_rerank: float = 0.50
+    rank_w_keyword: float = 0.10
+    rank_w_meaning: float = 0.0
+    rank_w_rerank: float = 0.90
     rank_boost_section: float = 0.25  # passage mentions the section named in the question
     rank_boost_type: float = 0.10  # document type suits the kind of question
     rank_boost_court: float = 0.08  # passage's court is named in the question

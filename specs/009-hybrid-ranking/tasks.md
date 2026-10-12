@@ -19,7 +19,7 @@ Paths are relative to the repository root. Backend commands run from `backend/`,
 - [X] T002 [P] Create migration `backend/alembic/versions/0008_answer_ranking.py` adding nullable JSON column `answers.ranking`, idempotent like 0007; add `ranking: Mapped[dict | None]` to `Answer` in `backend/src/mrcourt/models/legal.py`
 - [X] T003 [P] Create the shared evaluation set `backend/tests/data/ranking_eval_shared.json` with at least 60 questions on the shared law corpus only (no private case documents), each with `id`, `question`, `type` (law | courts | my_case | other), `expected` (instrument + section, or document title + page), `exact_reference`, `language`; include at least 20 exact-reference questions, 20 differently-worded questions and 5 Tamil questions
 - [X] T004 Create `backend/scripts/evaluate_ranking.py` per contracts/ranking-api.md (Evaluation CLI): load questions, run `search()` per question with `RANKING_MODE` forced per mode, find the rank of the first expected source, print hit@1/3/5, MRR, per-type counts; `--save-baseline` writes JSON; cache query vectors and reranker scores on disk outside the repository (reuse the cache approach in `backend/scripts/import_reference.py`)
-- [ ] T005 Run `evaluate_ranking.py --mode rrf --save-baseline` against `dev.db` and commit the result as `specs/009-hybrid-ranking/eval-baseline.json`
+- [X] T005 Run `evaluate_ranking.py --mode rrf --save-baseline` against `dev.db` and commit the result as `specs/009-hybrid-ranking/eval-baseline.json`
 
 **Checkpoint**: Baseline numbers exist before any ranking change.
 
@@ -92,7 +92,7 @@ Paths are relative to the repository root. Backend commands run from `backend/`,
 
 - [X] T023 [US4] Extend `backend/scripts/evaluate_ranking.py`: `--mode both`, `--baseline` comparison (better / worse / same per question), exit code 1 if hybrid is below baseline on hit@1 or MRR
 - [X] T024 [US4] Add `--grid` to `evaluate_ranking.py`: search weights (0.1 steps, summing to 1) and boosts (0, 0.05, 0.10, 0.15) using cached scores only; print the best 5 settings
-- [ ] T025 [US4] Run the grid on the shared set (and on a private question set kept outside the repository, if available); set the chosen defaults in `backend/src/mrcourt/config.py`; write `specs/009-hybrid-ranking/eval-results.md` with baseline vs hybrid hit@1/3/5, MRR, per type, differently-worded hit rate (target ≥ 90%) and exact-reference hit@1 (target 100%)
+- [X] T025 [US4] Run the grid on the shared set (and on a private question set kept outside the repository, if available); set the chosen defaults in `backend/src/mrcourt/config.py`; write `specs/009-hybrid-ranking/eval-results.md` with baseline vs hybrid hit@1/3/5, MRR, per type, differently-worded hit rate (target ≥ 90%) and exact-reference hit@1 (target 100%)
 - [X] T026 [P] [US4] Unit test `backend/tests/unit/test_evaluate_ranking.py` for the metric functions (hit@k, MRR, per-type grouping) on a tiny fixed example
 
 **Checkpoint**: Defaults are measured; SC-001 to SC-003 recorded.
@@ -105,7 +105,7 @@ Paths are relative to the repository root. Backend commands run from `backend/`,
 
 **Independent Test**: An administrator opens an answer and sees scores and signals; another advocate's private passage shows as hidden.
 
-- [ ] T027 [US5] In `backend/src/mrcourt/services/answering.py`, store the explanation in `Answer.ranking` (data-model.md shape; ids and numbers only, no text or names); same for assistant answers that cite sources in `backend/src/mrcourt/services/assistant_tools.py` *(Ask answers done; assistant answers not yet recorded: the assistant may search several times per answer)*
+- [X] T027 [US5] In `backend/src/mrcourt/services/answering.py`, store the explanation in `Answer.ranking` (data-model.md shape; ids and numbers only, no text or names); same for assistant answers that cite sources in `backend/src/mrcourt/services/assistant_tools.py` *(assistant answers keep, for each cited passage, its entry from the first search that ranked it, plus the number of searches)*
 - [X] T028 [P] [US5] Contract tests `backend/tests/contract/test_admin_ranking.py` for `GET /api/v1/admin/answers/{id}/ranking`: 403 non-admin, 404 unknown, `recorded:false` for old answers, hidden passages for another user's private document, audit entry `answer.ranking.view`
 - [X] T029 [US5] Implement the endpoint in `backend/src/mrcourt/api/admin.py` with response schema in `backend/src/mrcourt/schemas/admin.py` (contracts/ranking-api.md); plain-language signal labels ("Named in the question", "Statute suits this question", "Same court", "Recent judgment", "Your own case document")
 - [X] T030 [P] [US5] Add `getAnswerRanking(answerId)` to `frontend/src/services/assistant.ts` (or the admin service file used by the Ask pages)
@@ -119,10 +119,10 @@ Paths are relative to the repository root. Backend commands run from `backend/`,
 
 ## Phase 8: Polish & cross-cutting
 
-- [ ] T034 Latency check per quickstart.md §5: 30 questions, `rrf` vs `hybrid`; hybrid ≤ 10% slower (SC-004); record in `specs/009-hybrid-ranking/eval-results.md`
+- [X] T034 Latency check per quickstart.md §5: 30 questions, `rrf` vs `hybrid`; hybrid ≤ 10% slower (SC-004); record in `specs/009-hybrid-ranking/eval-results.md`
 - [X] T035 [P] README section "How answers are ranked" in `README.md`: signals, settings, `RANKING_MODE=rrf` rollback, how to run the evaluation
-- [ ] T036 Full regression: backend pytest, Vitest, `tsc`, ESLint, full Playwright run; record counts in `specs/009-hybrid-ranking/results.md`
-- [ ] T037 Run quickstart.md §3 behaviour checks in the running app and record outcomes in `specs/009-hybrid-ranking/results.md`
+- [X] T036 Full regression: backend pytest, Vitest, `tsc`, ESLint, full Playwright run; record counts in `specs/009-hybrid-ranking/results.md`
+- [X] T037 Run quickstart.md §3 behaviour checks in the running app and record outcomes in `specs/009-hybrid-ranking/results.md`
 
 ---
 

@@ -57,6 +57,7 @@ def make_request(data: AssistantRequestIn, user: CurrentUser, db: DbSession) -> 
         disclaimer=result.disclaimer,
         answer_mode="full",
         steps=result.steps,
+        ranking=result.ranking,
     )
     question.answer = answer
     for number, source in enumerate(result.citations, start=1):

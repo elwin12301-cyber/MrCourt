@@ -50,3 +50,4 @@ knowledge/
 
 # Real case documents: never commit
 docs/
+*.tsbuildinfo

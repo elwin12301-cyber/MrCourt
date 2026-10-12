@@ -13,7 +13,7 @@ import re
 import uuid
 from collections import Counter
 from contextvars import ContextVar
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import ColumnElement, and_, or_, select, text, type_coerce
@@ -23,6 +23,7 @@ from mrcourt.config import get_settings
 from mrcourt.models import KnowledgeDocument, LegalSource, User
 from mrcourt.models.legal import EMBEDDING_DIMENSIONS
 from mrcourt.services import ranking as ranker
+from mrcourt.services.metadata import case_label
 from mrcourt.services.question_type import classify
 from mrcourt.services.references import match as reference_match
 from mrcourt.services.references import parse_references
@@ -354,10 +355,33 @@ def _current_law(db: Session, ordered: list[Retrieved]) -> list[Retrieved]:
     return current
 
 
-def _matches(ref, source: LegalSource) -> str | None:  # type: ignore[no-untyped-def]
+def _matches(ref, source: LegalSource, *, mapped: bool = True) -> str | None:  # type: ignore[no-untyped-def]
+    """`mapped=False` leaves out the document's mapped case number (reading it loads the document)."""
     return reference_match(
         ref, instrument=source.instrument or "", section=source.section,
         label=source.citation_label or "", text=source.text or "", sections=source.sections,
+        case_number=source.case_number if mapped and ref.kind == "case" else None,
+    )
+
+
+def _case_documents(db: Session, references: list, user: User | None) -> list[LegalSource]:  # type: ignore[type-arg]
+    """Passages the person may see whose document's mapped case number is one the question names."""
+    wanted = []
+    for ref in references:
+        if ref.kind != "case" or ref.cnr:
+            continue
+        label = case_label(ref.case_type or "", ref.number, ref.year)
+        wanted.append(KnowledgeDocument.case_number == label)
+        if ref.year is None:
+            wanted.append(KnowledgeDocument.case_number.like(f"{label}/%"))
+    if not wanted:
+        return []
+    return list(
+        db.scalars(
+            select(LegalSource)
+            .join(KnowledgeDocument, LegalSource.document_id == KnowledgeDocument.id)
+            .where(_scope(user), or_(*wanted))
+        )
     )
 
 
@@ -400,8 +424,20 @@ def _hybrid_search(
     if references:
         extra = [s for s, _ in pool] if pool else list(db.scalars(select(LegalSource).where(_scope(user))))
         for source in extra:
-            if source.id not in candidates and any(_matches(ref, source) == "exact" for ref in references):
+            if source.id not in candidates and any(_matches(ref, source, mapped=False) == "exact" for ref in references):
                 candidates[source.id] = ranker.Candidate(source)
+        # A named case is also found through the case number mapped for its document (feature 008): later
+        # pages of a judgment do not repeat it.
+        for source in _case_documents(db, references, user):
+            candidates.setdefault(source.id, ranker.Candidate(source))
+
+    # The signals read each passage's document (type, court, date): load them in one query, not one per passage.
+    # The list is kept until the search ends: the session holds loaded objects only while something refers to them.
+    document_ids = {c.source.document_id for c in candidates.values() if c.source.document_id is not None}
+    documents = (
+        db.scalars(select(KnowledgeDocument).where(KnowledgeDocument.id.in_(document_ids))).all() if document_ids else []
+    )
+
     missing = [
         ref.label() for ref in references if not any(_matches(ref, c.source) for c in candidates.values())
     ]
@@ -413,7 +449,10 @@ def _hybrid_search(
         user_id=user.id if user is not None else None,
         rerank_available=False,
     )
-    preliminary = ranker.rank(list(candidates.values()), ctx, rs)
+    # The shortlist for the answer check weighs both searches equally, whatever the final weights: with a low
+    # meaning weight, passages only the meaning search found would otherwise never be checked at all.
+    shortlist = replace(rs, w_keyword=1.0, w_meaning=1.0)
+    preliminary = ranker.rank(list(candidates.values()), ctx, shortlist)
     judged = preliminary[: settings.rerank_candidates]
     scores = rerank_scores(question, [c.source.text for c in judged]) if judged and meaning_hits else None
     if scores is not None:
@@ -443,6 +482,7 @@ def _hybrid_search(
         "passages": [ranker.explain(by_id[h.source.id], i) for i, h in enumerate(hits, start=1) if h.source.id in by_id],
     }
     mode = "meaning" if any_embedded and ctx.rerank_available else "keywords"
+    del documents
     return SearchResult(hits, mode, explanation, missing)
 
 

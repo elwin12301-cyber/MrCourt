@@ -118,6 +118,20 @@ def test_a_private_case_number_is_first_only_for_its_owner(db, hybrid):
     assert others.missing_references == ["WP 11944/2013"]
 
 
+def test_a_named_case_finds_its_judgment_through_the_mapped_case_number(db, hybrid):
+    rohan = _user(db, "rohan.sharma@example.com")
+    anita = _user(db, "anita.sharma@example.com")
+    doc = make_document(db, title="judgement", citation="judgement.pdf", kind="note", owner=rohan,
+                        passages=["The wombat fence was found to be on the plaintiff's land.", "The appeal is allowed."])
+    doc.case_number = "S.A. 4410/2019"  # mapped by feature 008; the pages themselves never repeat it
+    db.commit()
+    mine = search(db, "What was decided in S.A. No. 4410 of 2019?", rohan)
+    assert mine.missing_references == []
+    assert [h.source.document_id for h in mine.hits[:2]] == [doc.id, doc.id]
+    others = search(db, "What was decided in S.A. No. 4410 of 2019?", anita)
+    assert all(h.source.document_id != doc.id for h in others.hits)
+
+
 def test_no_more_than_two_passages_from_one_document(db, hybrid):
     long_one = make_document(db, title="Long judgment", citation="Long", passages=[
         f"Quokka habitat ruling part {i}: the quokka habitat must be protected." for i in range(6)])

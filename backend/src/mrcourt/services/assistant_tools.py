@@ -22,7 +22,7 @@ from mrcourt.services import client_view
 from mrcourt.services.access import get_client_case, get_owned_case, visible_cases
 from mrcourt.services.cases import aware, list_cases, next_hearing
 from mrcourt.services.draft_templates import TEMPLATES
-from mrcourt.services.retrieval import retrieve
+from mrcourt.services.retrieval import search
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,8 @@ class ToolSet:
     question_id: uuid.UUID | None = None
     # Passages found by search_knowledge in this run, by label ("S1"...). Law paragraphs may cite only these.
     retrieved: dict[str, LegalSource] = field(default_factory=dict)
+    # The ranking explanation of each search_knowledge call (feature 009), in order.
+    rankings: list[dict[str, Any]] = field(default_factory=list)
     proposal: ProposedAction | None = None
 
     @property
@@ -246,7 +248,10 @@ class ToolSet:
     # ----- shared -----
     def _search_knowledge(self, args: dict[str, Any]) -> ToolResult:
         query = str(args.get("query", ""))[:300]
-        hits = retrieve(self.db, query, self.user, limit=6)
+        result = search(self.db, query, self.user, limit=6)
+        hits = result.hits
+        if result.ranking:
+            self.rankings.append(result.ranking)
         found = []
         for hit in hits:
             label = f"S{len(self.retrieved) + 1}"

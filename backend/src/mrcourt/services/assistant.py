@@ -120,6 +120,7 @@ class AssistantResult:
     message: str | None = None
     proposal: ProposedAction | None = None
     disclaimer: str = DISCLAIMER
+    ranking: dict[str, Any] | None = None  # why each cited passage ranked where it did (feature 009)
 
 
 def _parse_final(text: str) -> list[dict[str, Any]] | None:
@@ -228,4 +229,24 @@ def _build(final: list[dict[str, Any]], steps: list[dict[str, Any]], tools: Tool
         citations,
         NO_SOURCE_MESSAGE if outcome == "no_reliable_source" else None,
         tools.proposal,
+        ranking=combined_ranking(tools.rankings, citations),
     )
+
+
+def combined_ranking(rankings: list[dict[str, Any]], citations: list[LegalSource]) -> dict[str, Any] | None:
+    """One explanation for an answer built from several searches: for each cited passage, its entry from the
+    first search that ranked it (its position is its place in that search). Ids and numbers only."""
+    if not rankings:
+        return None
+    entries: dict[str, dict[str, Any]] = {}
+    for ranking in rankings:
+        for item in ranking.get("passages", []):
+            entries.setdefault(str(item["source_id"]), item)
+    references = list(dict.fromkeys(ref for r in rankings for ref in r.get("references", [])))
+    return {
+        "mode": rankings[0].get("mode"),
+        "question_type": rankings[0].get("question_type"),
+        "references": references,
+        "searches": len(rankings),
+        "passages": [entries[str(s.id)] for s in citations if str(s.id) in entries],
+    }

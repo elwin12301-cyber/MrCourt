@@ -29,7 +29,7 @@ def test_weights_are_normalised_and_shared_out_without_an_answer_check() -> None
     c = Candidate(src(), keyword=1.0, meaning=1.0, rerank=1.0)
     assert base_score(c, RS, rerank_available=True) == pytest.approx(1.0)
     c = Candidate(src(), keyword=1.0, meaning=0.0)
-    assert base_score(c, RS, rerank_available=False) == pytest.approx(0.35 / 0.5)
+    assert base_score(c, RS, rerank_available=False) == pytest.approx(1.0)
     uneven = RankSettings(w_keyword=2, w_meaning=1, w_rerank=1)
     assert base_score(Candidate(src(), keyword=1.0), uneven, True) == pytest.approx(0.5)
 
@@ -102,3 +102,12 @@ def test_at_most_two_per_document_unless_nothing_else() -> None:
     assert sum(1 for c in chosen if c.source.document_id == doc) == 2 and len(chosen) == 5
     only = diversify(long_judgment, per_document=2, limit=5)
     assert len(only) == 5  # nothing else qualifies: the cap is lifted
+
+
+def test_pinned_passages_count_toward_the_cap() -> None:
+    doc = uuid.uuid4()
+    named_case = [Candidate(src(document_id=doc), combined=0.5, pinned=True) for _ in range(6)]
+    others = [Candidate(src(document_id=uuid.uuid4()), combined=0.9) for _ in range(3)]
+    chosen = diversify(named_case + others, per_document=2, limit=5)
+    assert [c.pinned for c in chosen[:2]] == [True, True]
+    assert sum(1 for c in chosen if c.source.document_id == doc) == 2

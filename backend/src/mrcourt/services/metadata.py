@@ -77,7 +77,7 @@ def language(text: str) -> str | None:
     return None
 
 
-def _case_label(kind: str, number: str, year: str | None) -> str:
+def case_label(kind: str, number: str, year: str | None) -> str:
     letters = re.sub(r"[^A-Za-z]", "", kind).upper()
     known = {"CRLA": "Crl.A.", "CRLOP": "Crl.O.P.", "CRP": "C.R.P.", "CMA": "C.M.A."}
     prefix = known.get(letters, ".".join(letters) + ".")
@@ -85,7 +85,7 @@ def _case_label(kind: str, number: str, year: str | None) -> str:
 
 
 def case_numbers(text: str) -> list[str]:
-    found = [_case_label(m.group(1), m.group(2), m.group(3)) for m in CASE_RE.finditer(text)]
+    found = [case_label(m.group(1), m.group(2), m.group(3)) for m in CASE_RE.finditer(text)]
     return list(dict.fromkeys(found))
 
 
@@ -247,7 +247,7 @@ def extract(title: str, pages: list[str], kind: str = "note") -> dict[str, dict[
     out["doc_type"] = doc_type(title, header if quality == "readable" else "", kind)
     if quality == "unreadable":
         from_title = case_numbers(title) or [
-            _case_label(m.group(1), m.group(2), None) for m in re.finditer(r"\b(W\.?P|O\.?S|S\.?A|A\.?S)\.?\s*(\d{1,6})\b", title, re.I)
+            case_label(m.group(1), m.group(2), None) for m in re.finditer(r"\b(W\.?P|O\.?S|S\.?A|A\.?S)\.?\s*(\d{1,6})\b", title, re.I)
         ]
         if from_title:
             out["case_numbers"] = field(from_title, "likely")

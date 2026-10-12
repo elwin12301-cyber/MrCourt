@@ -201,6 +201,7 @@ def main() -> None:
     parser.add_argument("--cache", type=Path, default=Path(tempfile.gettempdir()) / "mrcourt-ranking-cache")
     parser.add_argument("--report", type=Path, help="write the full report as JSON")
     args = parser.parse_args()
+    sys.stdout.reconfigure(encoding="utf-8")  # questions in Tamil print on a Windows console
 
     questions = [q for path in args.questions for q in json.loads(path.read_text(encoding="utf-8"))["questions"]]
     settings = get_settings()

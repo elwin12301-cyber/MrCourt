@@ -52,6 +52,10 @@ class LegalSource(IdMixin, TimestampMixin, Base):
         return self.document.decided_on if self.document is not None else None
 
     @property
+    def case_number(self) -> str | None:
+        return self.document.case_number if self.document is not None else None
+
+    @property
     def doc_type(self) -> str | None:
         return self.document.doc_type if self.document is not None else None
 

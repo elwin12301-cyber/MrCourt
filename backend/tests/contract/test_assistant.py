@@ -121,6 +121,24 @@ def test_law_paragraphs_need_a_passage_the_assistant_found(advocate_client, db):
     assert body["citations"][0]["label"].startswith("Quokka Act")
 
 
+def test_a_cited_answer_records_why_its_passage_ranked_there(advocate_client, db):
+    make_document(db, title="Quokka", citation="Quokka Act", passages=["Quokka rule: quokka habitats are protected by law."])
+    db.commit()
+    use(
+        call("search_knowledge", query="quokka habitats protected"),
+        call("search_knowledge", query="quokka rule"),
+        final({"kind": "law", "text": "Quokka habitats are protected.", "sources": ["S1"]}),
+    )
+    body = _ask(advocate_client, "Are quokka habitats protected?").json()
+    assert body["outcome"] == "cited"
+    answer = db.scalars(select(Answer).order_by(Answer.created_at.desc())).first()
+    db.refresh(answer)
+    ranking = answer.ranking
+    assert ranking["searches"] == 2
+    assert [p["source_id"] for p in ranking["passages"]] == [str(answer.citations[0].source_id)]
+    assert "quokka" not in json.dumps(ranking).lower()  # ids and numbers only, never passage text
+
+
 def test_a_law_answer_with_no_verified_source_says_so(advocate_client):
     use(final({"kind": "law", "text": "Everything is allowed.", "sources": ["S1"]}))
     body = _ask(advocate_client, "Is everything allowed?").json()

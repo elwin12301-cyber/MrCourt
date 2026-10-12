@@ -55,3 +55,11 @@ def test_a_case_number_matches_its_document() -> None:
     ref = parse_references("W.P. 11944/2013")[0]
     assert match(ref, instrument="WP 11944-2013 Order", section=None, label="", text="W.P.No.11944 of 2013 ...") == "exact"
     assert match(ref, instrument="judgement", section=None, label="", text="O.S. No. 581 of 2010") is None
+
+
+def test_a_case_number_matches_through_the_documents_mapped_number() -> None:
+    ref = parse_references("What was decided in S.A. No. 4410 of 2019?")[0]
+    later_page = dict(instrument="judgement", section=None, label="judgement.pdf, page 9", text="The appeal is allowed.")
+    assert match(ref, **later_page) is None
+    assert match(ref, **later_page, case_number="S.A. 4410/2019") == "exact"
+    assert match(ref, **later_page, case_number="S.A. 4411/2019") is None
