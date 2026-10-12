@@ -343,7 +343,7 @@ administrator, cases, questions). Not yet tested on Render itself.
 ## Document details (metadata)
 
 Every knowledge document is mapped to standard details when it is added (feature 008): type (statute, judgment,
-order, petition, deed, deposition, notice), court, case numbers and CNR, case title and parties, judges, date,
+order, petition, deed, deposition, notice), court and bench, case numbers and CNR, case title and parties, judges, date,
 Acts and sections referred to, outcome, language, and whether its text could be read at all.
 
 - **Nothing is guessed.** A value is filled only from the document's text; each field says how sure MrCourt is

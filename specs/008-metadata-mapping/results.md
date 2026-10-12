@@ -21,9 +21,15 @@ Date: 2026-10-12. Development database: PostgreSQL 16 + pgvector (Docker).
 
 ## Accuracy (SC-001, SC-002; `scripts/check_metadata.py`)
 
-- Fictional test set (9 documents in court-paper layout): **40/40** expected fields right; fields marked
-  "found" correct **31/31 (100%)**; no value invented (every unknown field empty). SC-001 met on this set; the set
-  is small and fictional, so real-world accuracy should be re-checked on more real, readable documents.
+- Fictional test set (**20 documents** in court-paper layout: High Court judgments and orders including the
+  Madurai Bench, Principal Seat and a Division Bench, a Supreme Court appeal, district and sub court judgments and
+  orders, a CNR, a legal notice, sale and gift deeds, depositions, a petition, statute pages, Tamil text and
+  broken encoding): **106/106** expected fields right; fields marked "found" correct **87/87 (100%)**; no value
+  invented. SC-001 is met on this set. The set is fictional, written to the layouts seen in real papers; accuracy
+  should still be re-checked on more real, readable documents.
+- Growing the set found one real defect, now fixed: the court was taken from anywhere on the first two pages, so
+  an appeal mentioning "the decree of the District Munsif" was mapped to the lower court. The court named first
+  now wins.
 - Statute passages with a section: **288 of 4,958 (6%)**. **SC-002 (95%) is not met**: most "law" PDFs in the
   corpus are class-room notes arranged by topic, not section-by-section statute text. Real statute texts (bare
   Acts) would map far better; that is a data gap, not a mapping rule gap.
@@ -42,6 +48,12 @@ Date: 2026-10-12. Development database: PostgreSQL 16 + pgvector (Docker).
 
 - **Meaning search was broken on PostgreSQL** (the embedding column's type gave no vector distance operator).
   Fixed in `retrieval.meaning_query`, with a test that compiles the PostgreSQL query.
+
+## Added after review (2026-10-13)
+
+- **Bench** (FR-001 "court and bench") was listed but never filled. Now mapped from the top of the first
+  page ("Madurai Bench", "Principal Seat"; "Division Bench" is a kind of bench, not a seat, and is ignored),
+  shown and correctable in the details, and added to the short label: "Madras High Court (Madurai Bench)".
 
 ## Open
 

@@ -39,7 +39,7 @@ Run against the development API with the real search services (`scratchpad` scri
 ## Open
 
 - Targets not met on this corpus: differently-worded questions in the top 5 (84%, target 90%) and exact
-  reference first (80%, target 100%). Both need statute texts mapped section by section; Tamil questions need
+  reference first (85%, target 100%). Both need statute texts mapped section by section; Tamil questions need
   Tamil sources.
 - Latency is within the limit on the median (+8.9%) but not on the mean (+13%).
 - Questions such as "What was decided in S.A. <number>/<year>?" are classed as "courts", not "my case"; the named

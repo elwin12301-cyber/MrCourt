@@ -21,6 +21,7 @@ const CONFIDENCE: Record<Confidence, string> = {
 const LABELS: [string, string][] = [
   ['doc_type', 'Type'],
   ['court', 'Court'],
+  ['bench', 'Bench'],
   ['case_numbers', 'Case numbers'],
   ['cnr', 'CNR'],
   ['case_title', 'Case title'],
@@ -31,7 +32,7 @@ const LABELS: [string, string][] = [
   ['outcome', 'Outcome'],
   ['language', 'Language'],
 ];
-const EDITABLE = ['doc_type', 'court', 'case_numbers', 'case_title', 'judges', 'decided_on', 'outcome'];
+const EDITABLE = ['doc_type', 'court', 'bench', 'case_numbers', 'case_title', 'judges', 'decided_on', 'outcome'];
 const LIST_FIELDS = ['case_numbers', 'judges'];
 
 function show(name: string, value: unknown): string {

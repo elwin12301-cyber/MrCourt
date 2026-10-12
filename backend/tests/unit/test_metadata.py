@@ -71,3 +71,21 @@ def test_a_judge_name_survives_a_garbled_title():
 
     assert judges("CORAM\nTHE HONOURABLE \TRS, JUSTICE R.HEMALATHA\nS.A.No.1 of 2019") == ["R.Hemalatha"]
     assert judges("No judge named here") == []
+
+
+def test_the_bench_is_the_seat_named_at_the_top():
+    from mrcourt.services.metadata import bench
+
+    assert bench("BEFORE THE MADURAI BENCH OF MADRAS HIGH COURT") == "Madurai Bench"
+    assert bench("IN THE HIGH COURT OF JUDICATURE AT MADRAS\n(Principal Seat)") == "Principal Seat"
+    assert bench("IN THE HIGH COURT OF JUDICATURE AT MADRAS\nDIVISION BENCH") is None
+    cited = ["IN THE HIGH COURT OF JUDICATURE AT MADRAS\nDATED: 01.02.2023\nCORAM\nTHE HONOURABLE MR. JUSTICE A.RAVI\n"
+             "W.P.No.1 of 2023\nA ... Petitioner\nVs\nB ... Respondent\nORDER\n"
+             "A decision of the Madurai Bench in W.P.No.2 of 2019 was relied upon."]
+    assert extract("Order", cited)["bench"]["value"] is None
+
+
+def test_a_lower_court_named_in_the_body_is_not_the_court():
+    pages = ["IN THE COURT OF THE PRINCIPAL DISTRICT JUDGE, SALEM\nA.S.No.1 of 2020\nJUDGMENT\n"
+             "This appeal arises against the decree of the District Munsif, Omalur."]
+    assert extract("Appeal", pages)["court"]["value"] == "District Court, Salem"

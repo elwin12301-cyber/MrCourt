@@ -97,11 +97,19 @@ For any answer, an administrator opens "Why these sources?" and sees, for each c
 - Metadata missing (feature 008 not run on a document): no metadata signal is applied to it; it is not penalised.
 - Ties: the more recent and then the shared (verified) source wins.
 
+## Clarifications
+
+### Session 2026-10-13
+
+- Q: Must the default weights be the single best setting on the evaluation set? → A: No. The best setting ignores word matches entirely (answer check only), which leaves no sensible order when the answer check is unavailable and is tuned on the same 69 questions it is scored on. Defaults are the best setting that keeps a word-match weight, within 3 points of hit@1 of the overall best (chosen: word 0.10, meaning 0, answer check 0.90; hit@1 0.797, tied with the best such setting, against 0.812 for the overall best).
+- Q: What is the baseline for SC-001? → A: The current ranker on this feature's evaluation set (72% in the top 5 for differently worded questions). The 87% quoted in the description came from an earlier, different question set.
+- Q: When a question names a repealed provision (e.g. CrPC s. 437), is its replacement (BNSS s. 480) the right first source? → A: Yes. The current-law rule shows the provision in force; the evaluation set accepts either.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: Ranking MUST combine word-match, meaning-match and answer-check scores with adjustable weights; defaults MUST be the best-scoring setting on the evaluation set.
+- **FR-001**: Ranking MUST combine word-match, meaning-match and answer-check scores with adjustable weights; defaults MUST be the best-scoring setting on the evaluation set that keeps a non-zero word-match weight (so ranking stays sensible when the answer check is unavailable), and within 3 points of hit@1 of the overall best setting.
 - **FR-002**: An exact section or case reference in the question MUST put the matching passage first when the person may see it.
 - **FR-003**: Ranking MUST apply metadata signals: exact Act/section, court, document type suited to the question type, recency of judgments, and the advocate's own case documents.
 - **FR-004**: At most 2 cited passages MAY come from one document unless no other passage passes the reliability threshold.
@@ -121,7 +129,7 @@ For any answer, an administrator opens "Why these sources?" and sees, for each c
 
 ### Measurable Outcomes
 
-- **SC-001**: Questions worded differently from their source are answered from the right source at least 90% of the time (baseline 87%).
+- **SC-001**: Questions worded differently from their source are answered from the right source (in the top 5) at least 90% of the time. Baseline on this feature's evaluation set: 72% (the earlier 87% was measured on a different question set and is not comparable).
 - **SC-002**: Questions naming an existing section or case cite it first 100% of the time.
 - **SC-003**: Hit@1 and mean reciprocal rank are each higher than the baseline on the full evaluation set, and no question type gets worse by more than 2 points.
 - **SC-004**: Answers take no more than 10% longer than today on the same questions.

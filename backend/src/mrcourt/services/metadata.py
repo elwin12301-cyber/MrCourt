@@ -101,12 +101,35 @@ def court(header: str) -> str | None:
         return "Supreme Court of India"
     if m := re.search(r"HIGH COURT OF ([A-Z]+(?: [A-Z]+)?)\b", up):
         return f"{m.group(1).title()} High Court"
-    if m := re.search(r"DISTRICT MUNSIF,? (?:COURT,? )?(?:AT )?([A-Z]+)", up):
-        return f"District Munsif Court, {m.group(1).title()}"
-    if m := re.search(r"(?:SUBORDINATE JUDGE|SUB[- ]?COURT|SUB JUDGE),? (?:AT )?([A-Z]+)", up):
-        return f"Sub Court, {m.group(1).title()}"
-    if m := re.search(r"(?:PRINCIPAL |ADDITIONAL )?DISTRICT (?:JUDGE|COURT),? (?:AT )?([A-Z]+)", up):
-        return f"District Court, {m.group(1).title()}"
+    # "BEFORE THE MADURAI BENCH OF MADRAS HIGH COURT"
+    if (m := re.search(r"\b([A-Z]+) HIGH COURT\b", up)) and m.group(1) not in ("THE", "HON'BLE", "HONBLE", "OF"):
+        return f"{m.group(1).title()} High Court"
+    # Trial and district courts: the one named first is the court itself; a later one is usually the court
+    # whose decree is under appeal.
+    found = [
+        (m.start(), f"{name}, {m.group(1).title()}")
+        for name, pattern in (
+            ("District Munsif Court", r"DISTRICT MUNSIF,? (?:COURT,? )?(?:AT )?([A-Z]+)"),
+            ("Sub Court", r"(?:SUBORDINATE JUDGE|SUB[- ]?COURT|SUB JUDGE),? (?:AT )?([A-Z]+)"),
+            ("District Court", r"(?:PRINCIPAL |ADDITIONAL )?DISTRICT (?:JUDGE|COURT),? (?:AT )?([A-Z]+)"),
+        )
+        if (m := re.search(pattern, up))
+    ]
+    return min(found)[1] if found else None
+
+
+# Kinds of bench that are not a seat of the court ("DIVISION BENCH" says how many judges, not where).
+BENCH_KINDS = {"DIVISION", "FULL", "SPECIAL", "LARGER", "CONSTITUTION", "SINGLE", "THE", "A", "VACATION"}
+
+
+def bench(header: str) -> str | None:
+    """The seat of a High Court: "Madurai Bench", or "Principal Seat" when the header says so."""
+    up = re.sub(r"\s+", " ", header.upper())
+    for m in re.finditer(r"\b([A-Z]+) BENCH\b", up):
+        if m.group(1) not in BENCH_KINDS:
+            return f"{m.group(1).title()} Bench"
+    if "PRINCIPAL SEAT" in up:
+        return "Principal Seat"
     return None
 
 
@@ -263,8 +286,13 @@ def extract(title: str, pages: list[str], kind: str = "note") -> dict[str, dict[
         out["case_numbers"] = field(later, "likely")
     if cnr := CNR_RE.search(text):
         out["cnr"] = field(cnr.group(1), "found")
-    if name := court(header):
+    # The court is named at the top; the body may mention the lower court whose decree is under appeal.
+    top = (pages[0] if pages else "").splitlines()
+    if name := court("\n".join(top[:4])) or court(header):
         out["court"] = field(name, "found")
+    # Only the top of the first page names the bench: the body may cite decisions of other benches.
+    if seat := bench("\n".join(top[:8])):
+        out["bench"] = field(seat, "found")
     if names := judges(header):
         out["judges"] = field(names, "found")
     who = parties(header)
@@ -378,7 +406,9 @@ def short_label(doc: KnowledgeDocument | None, passage: LegalSource | None = Non
         if sections:
             parts.append("s. " + ", ".join(sections[:3]))
     else:
-        parts += [doc.court or "", f"{doc.decided_on:%d %b %Y}" if doc.decided_on else "", doc.case_number or ""]
+        seat = ((doc.details or {}).get("bench") or {}).get("value")
+        court_text = f"{doc.court} ({seat})" if doc.court and seat and seat not in doc.court else doc.court or ""
+        parts += [court_text, f"{doc.decided_on:%d %b %Y}" if doc.decided_on else "", doc.case_number or ""]
     if doc.text_quality == "unreadable":
         parts.append("text could not be read")
     label = " · ".join(p for p in parts if p)

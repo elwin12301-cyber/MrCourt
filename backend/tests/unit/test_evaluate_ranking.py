@@ -18,6 +18,11 @@ def test_hit_rules() -> None:
     assert not ev.is_hit(src("Negotiable Instruments Act, 1881", section="142"), {"instrument": "Negotiable", "section": "138"})
     assert ev.is_hit(src("Indian Penal Code (IPC)", "On  THEFT and"), {"instrument": "Indian Penal Code", "contains": ["theft"]})
     assert not ev.is_hit(src("Contract Act", "theft"), {"instrument": "Indian Penal Code", "contains": ["theft"]})
+    repealed = {"instrument": "Code of Criminal Procedure", "section": "437",
+                "or": [{"instrument": "Bharatiya Nagarik Suraksha Sanhita", "section": "480"}]}
+    assert ev.is_hit(src("Bharatiya Nagarik Suraksha Sanhita, 2023", section="480"), repealed)
+    assert ev.is_hit(src("Code of Criminal Procedure, 1973", section="437"), repealed)
+    assert not ev.is_hit(src("Bharatiya Nagarik Suraksha Sanhita, 2023", section="483"), repealed)
 
 
 def test_metrics() -> None:

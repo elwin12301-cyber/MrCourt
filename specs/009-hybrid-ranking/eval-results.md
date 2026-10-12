@@ -12,15 +12,17 @@ Hybrid = the new ranker with the chosen defaults (below).
 
 | Group | n | hit@1 | hit@3 | hit@5 | MRR |
 |---|---|---|---|---|---|
-| **All** baseline | 69 | 0.652 | 0.826 | 0.826 | 0.732 |
-| **All** hybrid | 69 | **0.783** | **0.884** | **0.884** | **0.829** |
-| Law baseline / hybrid | 52 | 0.577 / 0.731 | 0.769 / 0.846 | 0.769 / 0.846 | 0.663 / 0.782 |
-| Exact reference baseline / hybrid | 20 | 0.600 / 0.800 | 0.850 / 0.850 | 0.850 / 0.850 | 0.708 / 0.817 |
+| **All** baseline | 69 | 0.652 | 0.841 | 0.841 | 0.739 |
+| **All** hybrid | 69 | **0.797** | **0.899** | **0.899** | **0.843** |
+| Law baseline / hybrid | 52 | 0.577 / 0.750 | 0.788 / 0.865 | 0.788 / 0.865 | 0.673 / 0.801 |
+| Exact reference baseline / hybrid | 20 | 0.600 / 0.850 | 0.900 / 0.900 | 0.900 / 0.900 | 0.733 / 0.867 |
 | Differently worded baseline / hybrid | 32 | 0.562 / 0.688 | 0.719 / 0.844 | 0.719 / 0.844 | 0.635 / 0.760 |
 | Other baseline / hybrid | 17 | 0.882 / 0.941 | 1.000 / 1.000 | 1.000 / 1.000 | 0.941 / 0.971 |
 | Tamil baseline / hybrid | 5 | 0.000 / 0.400 | 0.000 / 0.400 | 0.000 / 0.400 | 0.000 / 0.400 |
 
-Per question: 11 better, 1 worse (x06 "What does Article 21 protect?", 2nd → 3rd), the rest unchanged.
+Per question: 12 better, 1 worse (x06 "What does Article 21 protect?", 2nd → 3rd), the rest unchanged.
+Re-measured on 2026-10-13 after the question set started accepting BNSS s. 480 for the repealed CrPC s. 437
+(spec clarification); the baseline in `eval-baseline.json` was saved again in the same run.
 
 ## Choosing the weights
 
@@ -38,22 +40,22 @@ Chosen defaults (`backend/src/mrcourt/config.py`): `RANK_W_KEYWORD=0.10`, `RANK_
 2 passages per document; 20 candidates checked.
 
 The grid's best setting on these 69 questions (answer check only, section boost 0.15) reaches hit@1 0.812,
-MRR 0.850, i.e. about two questions more. It was **not** chosen: it is tuned on the same small set it is scored
-on, and a small keyword weight keeps a sensible order when the answer check is unavailable (then only keyword
-evidence is used, as before).
+MRR 0.850, i.e. one question more. It was **not** chosen: it is tuned on the same small set it is scored on, and
+a small keyword weight keeps a sensible order when the answer check is unavailable (then only keyword evidence
+is used, as before). FR-001 was amended accordingly (spec clarification of 2026-10-13): the defaults are the best
+setting that keeps a keyword weight, within 3 points of the overall best. Checked: the chosen defaults tie with
+the best such setting (MRR 0.843, hit@1 0.797) and are 1.5 points below the overall best.
 
 ## Targets
 
 | Target (spec) | Result | Met? |
 |---|---|---|
-| Hybrid not below baseline on hit@1 and MRR | 0.652 → 0.783; 0.732 → 0.829 | Yes |
-| Differently worded questions found in the top 5: ≥ 90% | 84% (27 of 32) | **No** |
-| Exact reference first (hit@1): 100% | 80% (16 of 20) | **No** |
+| Hybrid above baseline on hit@1 and MRR; no type worse by more than 2 points (SC-003) | 0.652 → 0.797; 0.739 → 0.843; every type better | Yes |
+| Differently worded questions found in the top 5: ≥ 90% (SC-001; baseline 72%) | 84% (27 of 32) | **No** |
+| Exact reference first (hit@1): 100% (SC-002) | 85% (17 of 20) | **No** |
 
-The 4 exact-reference questions not answered first, checked one by one (each has a matching passage):
-
-- **x05 "Section 437 CrPC"**: by design. CrPC s. 437 is repealed; the current-law rule shows its replacement,
-  BNSS s. 480, first. The question set should accept BNSS s. 480 (then exact hit@1 is 17 of 20).
+The 3 exact-reference questions not answered first, checked one by one (each has a matching passage). The
+repealed CrPC s. 437 question is now answered first with its replacement, BNSS s. 480, which the set accepts.
 - **x06 "Article 21"**: found, at position 3.
 - **x18 "Section 11 CPC res judicata"**: the top 5 are all CPC res judicata notes, but not the passage that
   names "section 11", which the question set requires.

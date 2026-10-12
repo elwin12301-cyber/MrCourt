@@ -39,6 +39,9 @@ def norm(text: str) -> str:
 
 
 def is_hit(source, expected: dict) -> bool:  # type: ignore[no-untyped-def]
+    """`expected` may list accepted alternatives under "or" (e.g. a repealed section and its replacement)."""
+    if any(is_hit(source, alternative) for alternative in expected.get("or", [])):
+        return True
     if expected.get("instrument", "").lower() not in (source.instrument or "").lower():
         return False
     if expected.get("section"):

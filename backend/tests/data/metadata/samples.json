@@ -107,6 +107,158 @@
         "{pfr &atlc, o fr dr,'.,- e..fir*iLo duo'u S,$1uli. ptl , M,B.$n<r a.,d dlma)t 6Wz er dv. me urgr urtapy dsevn, $. 6ro., tppdmrro mnad.r.- e-F)aimdwd: fi$ugiJ, e8c..,ifrnsarb -6 eJcffb gsi Cr-nr-r fgillfl+ fi ZBd fin & 4urngrfi .dtga,Ln Wfic oubLl al.ghig artfu,, GlLnurfllgGzuog6ur ucirefl soh GlLor--rfl gGzuognn Gioeir$lmouu ueir6rfls6h oflgriqryrh"
       ],
       "expected": {"text_quality": ["unreadable", "found"], "court": [null, "not_found"], "judges": [null, "not_found"], "case_number": ["O.S. 581", "likely"]}
+    },
+    {
+      "id": "madurai_bench_appeal",
+      "title": "Criminal appeal judgment",
+      "kind": "note",
+      "pages": [
+        "BEFORE THE MADURAI BENCH OF MADRAS HIGH COURT\nRESERVED ON : 02.11.2022\nDELIVERED ON : 10.01.2023\nCORAM\nTHE HONOURABLE MR. JUSTICE R.SENTHILVEL\nCrl.A.(MD)No.318 of 2020\nK.Murugesan ... Appellant\nVs\nState rep. by the Inspector of Police, Melur. ... Respondent\nPrayer: Criminal Appeal filed under Section 374 of the Code of Criminal Procedure against the conviction under Section 304 IPC.",
+        "In the result, the Criminal Appeal is partly allowed. The sentence is reduced to the period already undergone."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["Madras High Court", "found"],
+        "bench": ["Madurai Bench", "found"], "case_number": ["Crl.A. 318/2020", "found"],
+        "decided_on": ["2023-01-10", "found"], "judges": [["R.Senthilvel"], "found"],
+        "outcome": ["partly allowed", "found"],
+        "acts": [[{"act": "CRPC", "section": "374"}, {"act": "IPC", "section": "304"}], "found"]
+      }
+    },
+    {
+      "id": "supreme_court_appeal",
+      "title": "Civil appeal",
+      "kind": "note",
+      "pages": [
+        "IN THE SUPREME COURT OF INDIA\nCIVIL APPELLATE JURISDICTION\nC.A.No.4521 of 2016\nJUDGMENT\nPronounced on 3rd March, 2019\nV.Lakshmanan ... Appellant\nVersus\nP.Saraswathi ... Respondent",
+        "The High Court rightly held that the agreement was not proved. The appeal is dismissed. No order as to costs."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["Supreme Court of India", "found"], "bench": [null, "not_found"],
+        "case_number": ["C.A. 4521/2016", "found"], "decided_on": ["2019-03-03", "found"],
+        "outcome": ["dismissed", "found"]
+      }
+    },
+    {
+      "id": "quash_petition_order",
+      "title": "Quash petition order",
+      "kind": "note",
+      "pages": [
+        "IN THE HIGH COURT OF JUDICATURE AT MADRAS\nDATED: 21.06.2022\nCORAM:\nTHE HONOURABLE MS. JUSTICE A.NIRMALA\nCrl.O.P.No.14402 of 2021\nS.Bharathi ... Petitioner\nVs\nThe Sub Inspector of Police, Avadi. ... Respondent\nPRAYER: Criminal Original Petition filed under Section 482 of Cr.P.C. to quash the proceedings.\nORDER",
+        "The dispute is purely civil in nature. The Criminal Original Petition is allowed and the proceedings are quashed."
+      ],
+      "expected": {
+        "doc_type": ["order", "found"], "court": ["Madras High Court", "found"], "bench": [null, "not_found"],
+        "case_number": ["Crl.O.P. 14402/2021", "found"], "decided_on": ["2022-06-21", "found"],
+        "judges": [["A.Nirmala"], "found"], "outcome": ["allowed", "found"]
+      }
+    },
+    {
+      "id": "district_first_appeal",
+      "title": "First appeal judgment",
+      "kind": "note",
+      "pages": [
+        "IN THE COURT OF THE PRINCIPAL DISTRICT JUDGE, SALEM\nPresent: Thiru. M.Govindan, M.L., Principal District Judge\nA.S.No.66 of 2018\nJUDGMENT\nR.Palanisamy ... Appellant\nVs\nK.Chinnasamy ... Respondent\nThis appeal arises against the decree in O.S.No.140 of 2015 on the file of the District Munsif, Omalur.",
+        "In the result, the appeal is dismissed with costs. Pronounced by me in open court on this the 28th day of February 2020."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["District Court, Salem", "found"],
+        "case_number": ["A.S. 66/2018", "found"], "decided_on": ["2020-02-28", "found"],
+        "outcome": ["dismissed", "found"],
+        "parties": [{"petitioner": ["R.Palanisamy"], "respondent": ["K.Chinnasamy"]}, "found"]
+      }
+    },
+    {
+      "id": "cheque_legal_notice",
+      "title": "Notice",
+      "kind": "note",
+      "pages": [
+        "LEGAL NOTICE\nUnder Section 138 of the Negotiable Instruments Act\nTo: Mr. D.Rajkumar, Karur.\nMy client issued the cheque dated 05.04.2023 which was returned unpaid. You are called upon to pay the amount within fifteen days of receipt of this notice."
+      ],
+      "expected": {
+        "doc_type": ["notice", "found"], "court": [null, "not_found"], "outcome": [null, "not_found"],
+        "acts": [[{"act": "NI", "section": "138"}], "found"]
+      }
+    },
+    {
+      "id": "gift_deed",
+      "title": "Gift deed",
+      "kind": "note",
+      "pages": [
+        "GIFT DEED\nThis deed of gift is executed on this the 9th day of August 2012 by S.Kamala in favour of her son S.Arun.\nSCHEDULE OF PROPERTY: Survey No. 211/4, Kangeyam village, measuring 1.20 acres."
+      ],
+      "expected": {
+        "doc_type": ["deed", "found"], "court": [null, "not_found"], "judges": [null, "not_found"],
+        "outcome": [null, "not_found"]
+      }
+    },
+    {
+      "id": "revision_principal_seat",
+      "title": "Revision order",
+      "kind": "note",
+      "pages": [
+        "IN THE HIGH COURT OF JUDICATURE AT MADRAS\n(Principal Seat)\nDATED: 08.12.2021\nCORAM:\nTHE HONOURABLE MR. JUSTICE T.PRABHAKAR\nC.R.P.No.2290 of 2021\nN.Sivakami ... Petitioner\nVs\nG.Mohan ... Respondent\nPRAYER: Civil Revision Petition filed under Article 227 of the Constitution of India.\nORDER",
+        "There is no illegality in the order of the trial court. The Civil Revision Petition is dismissed."
+      ],
+      "expected": {
+        "doc_type": ["order", "found"], "court": ["Madras High Court", "found"], "bench": ["Principal Seat", "found"],
+        "case_number": ["C.R.P. 2290/2021", "found"], "decided_on": ["2021-12-08", "found"],
+        "judges": [["T.Prabhakar"], "found"], "outcome": ["dismissed", "found"],
+        "acts": [[{"act": "CONSTITUTION", "section": "227"}], "found"]
+      }
+    },
+    {
+      "id": "division_bench_writ",
+      "title": "Writ petition judgment",
+      "kind": "note",
+      "pages": [
+        "IN THE HIGH COURT OF JUDICATURE AT MADRAS\nDIVISION BENCH\nRESERVED ON : 14.07.2020\nPRONOUNCED ON : 30.09.2020\nCORAM\nTHE HONOURABLE MR. JUSTICE V.KANNAN\nAND\nTHE HONOURABLE MRS. JUSTICE P.REVATHI\nW.P.No.9010 of 2019\nM.Ganesan ... Petitioner\nVs\nThe Secretary, Housing Board. ... Respondent",
+        "For the reasons above, the writ petition is dismissed. No costs."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["Madras High Court", "found"], "bench": [null, "not_found"],
+        "case_number": ["W.P. 9010/2019", "found"], "decided_on": ["2020-09-30", "found"],
+        "judges": [["V.Kannan", "P.Revathi"], "found"], "outcome": ["dismissed", "found"]
+      }
+    },
+    {
+      "id": "chief_examination",
+      "title": "PW-1 evidence",
+      "kind": "note",
+      "pages": [
+        "O.S.No.77 of 2016\nP.W.1 - Chief examination\nMy name is K.Selvam. I purchased the suit property in 2009. The defendant put up a fence on my land."
+      ],
+      "expected": {
+        "doc_type": ["deposition", "found"], "case_number": ["O.S. 77/2016", "found"], "court": [null, "not_found"],
+        "outcome": [null, "not_found"]
+      }
+    },
+    {
+      "id": "cma_order_cnr",
+      "title": "Appeal order",
+      "kind": "note",
+      "pages": [
+        "IN THE COURT OF THE SUBORDINATE JUDGE, ERODE\nCNR No. TNER020003452020\nC.M.A.No.12 of 2020\nDate of order: 15.09.2021\nORDER\nThis appeal is against the order of the District Munsif refusing an injunction.",
+        "The order under appeal is confirmed. The appeal is dismissed. No costs."
+      ],
+      "expected": {
+        "doc_type": ["order", "found"], "court": ["Sub Court, Erode", "found"], "cnr": ["TNER020003452020", "found"],
+        "case_number": ["C.M.A. 12/2020", "found"], "decided_on": ["2021-09-15", "found"],
+        "outcome": ["dismissed", "found"]
+      }
+    },
+    {
+      "id": "bns_sessions_appeal",
+      "title": "Criminal appeal",
+      "kind": "note",
+      "pages": [
+        "IN THE COURT OF THE PRINCIPAL DISTRICT JUDGE, NAMAKKAL\nCrl.A.No.45 of 2025\nJUDGMENT\nT.Velu ... Appellant\nVs\nState by Inspector of Police, Rasipuram. ... Respondent\nThe appellant was convicted under Section 303 of BNS for theft of a two-wheeler.",
+        "The identification was not proved. The appeal is allowed and the appellant is acquitted. Pronounced by me on this the 4th day of August 2025."
+      ],
+      "expected": {
+        "doc_type": ["judgment", "found"], "court": ["District Court, Namakkal", "found"],
+        "case_number": ["Crl.A. 45/2025", "found"], "decided_on": ["2025-08-04", "found"],
+        "outcome": ["allowed", "found"], "acts": [[{"act": "BNS", "section": "303"}], "found"]
+      }
     }
   ]
 }
