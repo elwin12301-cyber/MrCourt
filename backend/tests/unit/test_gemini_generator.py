@@ -63,7 +63,21 @@ def test_a_busy_main_model_falls_back_to_the_lite_model(monkeypatch) -> None:
         return httpx.Response(503) if tried[-1] == "main-model" else reply('{"paragraphs": []}')
 
     assert generator(handler).generate("What?", passages()) == []
-    assert tried == ["main-model"] * 3 + ["lite-model"]
+    assert tried == ["main-model"] * 2 + ["lite-model"]
+
+
+def test_a_model_that_does_not_answer_in_time_is_treated_as_busy(monkeypatch) -> None:
+    settings = get_settings()
+    monkeypatch.setattr(settings, "gemini_api_key", "test-key")
+    monkeypatch.setattr(settings, "gemini_model", "main-model")
+    monkeypatch.setattr(settings, "gemini_fallback_model", "lite-model")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path.endswith("main-model:generateContent"):
+            raise httpx.ReadTimeout("too slow", request=request)
+        return reply('{"paragraphs": []}')
+
+    assert generator(handler).generate("What?", passages()) == []
 
 
 def test_any_failure_means_no_answer_not_a_guess(monkeypatch) -> None:
@@ -80,3 +94,36 @@ def test_the_writer_is_chosen_by_which_key_is_set(monkeypatch) -> None:
     assert isinstance(get_generator(), ExtractiveGenerator)
     monkeypatch.setattr(settings, "gemini_api_key", "k")
     assert isinstance(get_generator(), GeminiGenerator)
+
+
+def _corpus(db):
+    from helpers import make_document
+
+    make_document(db, title="Quokka", citation="Quokka Act", passages=["Quokka rule: quokka habitats are protected by law."])
+    db.commit()
+
+
+def test_when_gemini_fails_the_cited_passages_are_shown_as_they_are(db, monkeypatch) -> None:
+    from mrcourt.services.answering import WRITER_BUSY_NOTE, answer_question, set_generator
+
+    _corpus(db)
+    set_generator(generator(lambda r: httpx.Response(503)))
+    try:
+        result = answer_question(db, "Are quokka habitats protected?", None)
+    finally:
+        set_generator(None)
+    assert result.outcome == "cited" and result.answer_mode == "passages"
+    assert result.paragraphs and "quokka habitats are protected" in result.paragraphs[0].text
+    assert result.message and WRITER_BUSY_NOTE in result.message
+
+
+def test_when_gemini_says_the_passages_do_not_answer_there_is_no_source(db) -> None:
+    from mrcourt.services.answering import answer_question, set_generator
+
+    _corpus(db)
+    set_generator(generator(lambda r: reply('{"paragraphs": []}')))
+    try:
+        result = answer_question(db, "Are quokka habitats protected?", None)
+    finally:
+        set_generator(None)
+    assert result.outcome == "no_reliable_source" and result.answer_mode == "full"

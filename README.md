@@ -88,7 +88,7 @@ Copy `.env.example` to `.env`. Names only are listed there; never commit values.
 | `ALLOWED_ORIGINS` | Public address of the frontend (cross-origin write protection) |
 | `COOKIE_SECURE` | `true` in production (HTTPS only cookies) |
 | `ANTHROPIC_API_KEY` | Enables model-written answers and the assistant. Without it, answers quote the cited passages directly and the assistant is off |
-| `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | A free alternative for model-written **answers** (Ask MrCourt) when there is no Anthropic key (default `gemini-3.5-flash`, then `gemini-3.5-flash-lite` when busy). Same prompt, same citation check. The assistant (AI Assistant tab) still needs the Anthropic key. Free-tier limits change and apply per minute and per day; when they are hit the answer falls back to "no reliable source", never to a guess |
+| `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | A free alternative for model-written **answers** (Ask MrCourt) when there is no Anthropic key (default `gemini-3.5-flash`, then `gemini-3.5-flash-lite` when busy). Same prompt, same citation check. The assistant (AI Assistant tab) still needs the Anthropic key. Free-tier limits change and apply per minute and per day; when Gemini is busy or out of quota (a slow reply counts as busy, then the lite model is tried) the cited passages are shown as they are, with a note, never a guess |
 | `ASSISTANT_MODEL` | Model for the assistant (defaults to the answer model) |
 | `VOYAGE_API_KEY` | Meaning-based search (embeddings and reranking, Voyage AI). Without it, search is by keywords only |
 | `EMBEDDING_MODEL`, `RERANK_MODEL`, `MIN_RERANK_SCORE` | Voyage models and the score a meaning-only passage needs before it is cited (default 0.5, measured) |

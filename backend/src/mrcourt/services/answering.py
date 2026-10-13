@@ -112,7 +112,7 @@ class GeminiGenerator:
     """Google Gemini (has a free tier). Same prompt, same JSON reply, same verification as the other writers."""
 
     URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-    RETRY_AFTER = (3.0, 10.0)  # seconds to wait before another try when the free tier says "slow down"
+    RETRY_AFTER = (2.0,)  # seconds to wait before one more try when the free tier says "slow down"
 
     def __init__(self, client=None, sleep=None) -> None:  # type: ignore[no-untyped-def]
         self._client = client
@@ -135,13 +135,17 @@ class GeminiGenerator:
         }
         sleep = self._sleep or time.sleep
         try:
-            client = self._client or httpx.Client(timeout=60)
+            client = self._client or httpx.Client(timeout=httpx.Timeout(30, connect=10))
             headers = {"x-goog-api-key": settings.gemini_api_key}
             models = [m for m in dict.fromkeys((settings.gemini_model, settings.gemini_fallback_model)) if m]
+            response = None
             for model in models:
                 url = self.URL.format(model=model)
                 for wait in (*self.RETRY_AFTER, None):
-                    response = client.post(url, headers=headers, json=payload)
+                    try:
+                        response = client.post(url, headers=headers, json=payload)
+                    except httpx.TimeoutException:  # a busy model that does not answer in time counts as busy
+                        response = httpx.Response(503)
                     if response.status_code in (429, 500, 503) and wait is not None:
                         sleep(wait)
                         continue
@@ -149,12 +153,14 @@ class GeminiGenerator:
                 if response.status_code not in (429, 500, 503):
                     break  # answered, or refused for a reason another model will not change
                 logger.warning("Gemini model %s is busy or out of quota; trying the next one", model)
+            assert response is not None
             response.raise_for_status()
             parts = response.json()["candidates"][0]["content"]["parts"]
             raw = "".join(str(part.get("text", "")) for part in parts if not part.get("thought"))
             return _parse_paragraphs(raw, labelled)
-        except Exception:  # fail closed, as for every provider
-            logger.warning("Gemini answer generation failed; returning no_reliable_source")
+        except Exception as error:  # fail closed, as for every provider
+            # The kind of failure helps (a busy model, an expired key, a bad reply); never the question or passages.
+            logger.warning("Gemini answer generation failed (%s)", type(error).__name__)
             return None
 
 
@@ -185,6 +191,7 @@ def no_source(answer_mode: str = "passages", search_mode: str = "keywords") -> A
 
 
 NO_FILTER_MATCH = "No source matches the filters you chose. Try fewer filters."
+WRITER_BUSY_NOTE = "A written answer was not available just now, so the cited passages are shown as they are."
 
 
 def answer_question(
@@ -219,6 +226,13 @@ def answer_question(
 
     passages = [h.source for h in hits]
     generated = generator.generate(question, passages)
+    if generated is None and isinstance(generator, GeminiGenerator):
+        # The free Gemini service was busy or refused (None; an empty list means "these passages do not answer").
+        # Show the cited passages as they are, as when no model is set up: grounded by construction.
+        logger.warning("Gemini unavailable; showing the cited passages as they are")
+        mode = "passages"
+        missing = " ".join(filter(None, [missing, WRITER_BUSY_NOTE]))
+        generated = ExtractiveGenerator().generate(question, passages)
     if not generated:
         return unanswered()
 
