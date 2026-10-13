@@ -85,6 +85,12 @@ An administrator runs mapping over all shared documents, and an advocate over al
 - Private documents name real people: those names are shown only to the owner and are never used in shared filters, lists or statistics.
 - A document is removed: its details are removed with it.
 
+## Clarifications
+
+### Session 2026-10-13
+
+- Q: May administrators see advocates' private documents? → A: Yes, read-only (decided by the product owner). Administrators see private documents in the knowledge base with the owner's name, their mapped details and passages; each view is audited (`knowledge.private.list`, `.details`, `.passage`, recording who and which document, never content). Correcting, re-mapping and removing stay with the owner. This follows the existing rule that administrators may read private case content (feature 003). Other advocates and clients still see nothing.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -98,7 +104,7 @@ An administrator runs mapping over all shared documents, and an advocate over al
 - **FR-007**: Asking a question MUST allow the same filters, and citations MUST then come only from matching passages; with no match the answer says so.
 - **FR-008**: Citations and the passage viewer MUST show the mapped details in short form, leaving out unknown fields.
 - **FR-009**: Mapping MUST run automatically for new documents and on request in bulk for existing ones, with a progress summary.
-- **FR-010**: Details of private documents MUST be visible only to their owner; they MUST NOT appear in shared filters, lists, counts or answers for anyone else, and the existing rule that clients see only shared sources MUST hold.
+- **FR-010**: Details of private documents MUST be visible only to their owner and to administrators (read-only; every administrator view of a private document, its details or its passages is recorded in the audit log); they MUST NOT appear in filters, lists, counts or answers for any other advocate or client, and the existing rule that clients see only shared sources MUST hold.
 - **FR-011**: Sections MUST be recorded as written in the document (old or new criminal law), with the Act named.
 - **FR-012**: Corrections to shared documents MUST be recorded in the administrator audit log.
 - **FR-013**: All new screens MUST meet the project's accessibility rules in both themes at desktop and phone widths.
@@ -117,7 +123,7 @@ An administrator runs mapping over all shared documents, and an advocate over al
 - **SC-002**: At least 95% of statute passages are mapped to the right Act and section.
 - **SC-003**: Using a filter, an advocate finds a known judgment among 50+ documents in under 30 seconds.
 - **SC-004**: With a section filter, 100% of citations in tested answers belong to that section or to a case referring to it.
-- **SC-005**: No private document detail is ever returned to another user in tests of lists, filters, counts and answers.
+- **SC-005**: No private document detail is ever returned to another advocate or a client in tests of lists, filters, counts and answers; every administrator view of one is audited.
 
 ## Assumptions
 

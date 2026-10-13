@@ -104,6 +104,7 @@ For any answer, an administrator opens "Why these sources?" and sees, for each c
 - Q: Must the default weights be the single best setting on the evaluation set? → A: No. The best setting ignores word matches entirely (answer check only), which leaves no sensible order when the answer check is unavailable and is tuned on the same 69 questions it is scored on. Defaults are the best setting that keeps a word-match weight, within 3 points of hit@1 of the overall best (chosen: word 0.10, meaning 0, answer check 0.90; hit@1 0.797, tied with the best such setting, against 0.812 for the overall best).
 - Q: What is the baseline for SC-001? → A: The current ranker on this feature's evaluation set (72% in the top 5 for differently worded questions). The 87% quoted in the description came from an earlier, different question set.
 - Q: When a question names a repealed provision (e.g. CrPC s. 437), is its replacement (BNSS s. 480) the right first source? → A: Yes. The current-law rule shows the provision in force; the evaluation set accepts either.
+- Q: Should the administrator's ranking explanation still hide advocates' private passages? → A: No. Administrators may now see private documents (feature 008 clarification of the same date), so the explanation shows them in full; the view is audited (`answer.ranking.view`).
 
 ## Requirements *(mandatory)*
 
@@ -115,7 +116,7 @@ For any answer, an administrator opens "Why these sources?" and sees, for each c
 - **FR-004**: At most 2 cited passages MAY come from one document unless no other passage passes the reliability threshold.
 - **FR-005**: Existing rules MUST hold: visibility per person, citation checking, reliability threshold and "no reliable source" reply.
 - **FR-006**: An evaluation report MUST give hit@1, hit@3, hit@5 and mean reciprocal rank, overall and per question type, compared with a saved baseline.
-- **FR-007**: Administrators MUST be able to see the scores and signals behind each cited passage of any answer, with other users' private documents hidden.
+- **FR-007**: Administrators MUST be able to see the scores and signals behind each cited passage of any answer, including passages from advocates' private documents (the view is audited).
 - **FR-008**: Weights and signals MUST be changeable by configuration without changing the safety rules.
 - **FR-009**: Ranking MUST NOT noticeably slow answers (see SC-004).
 
@@ -133,7 +134,7 @@ For any answer, an administrator opens "Why these sources?" and sees, for each c
 - **SC-002**: Questions naming an existing section or case cite it first 100% of the time.
 - **SC-003**: Hit@1 and mean reciprocal rank are each higher than the baseline on the full evaluation set, and no question type gets worse by more than 2 points.
 - **SC-004**: Answers take no more than 10% longer than today on the same questions.
-- **SC-005**: In tests, no private passage of another user appears in any answer or explanation.
+- **SC-005**: In tests, no private passage of an advocate appears in any answer or explanation for another advocate or a client.
 
 ## Assumptions
 

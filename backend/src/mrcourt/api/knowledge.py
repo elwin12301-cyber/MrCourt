@@ -27,13 +27,28 @@ from mrcourt.schemas.knowledge import (
     PassageOut,
     RemapOut,
 )
-from mrcourt.services import knowledge, metadata, ratelimit
+from mrcourt.services import audit, knowledge, metadata, ratelimit
 from mrcourt.services.retrieval import visible_to
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
 
-def _out(user: User, doc: KnowledgeDocument) -> DocumentOut:
+def _owners(db: DbSession, user: User, docs: list[KnowledgeDocument]) -> dict[uuid.UUID, str]:
+    """Owner names of private documents, for administrators only."""
+    ids = {d.owner_id for d in docs if d.owner_id is not None}
+    if user.role != "admin" or not ids:
+        return {}
+    return {u.id: u.username or u.full_name for u in db.scalars(select(User).where(User.id.in_(ids)))}
+
+
+def _audit_private(db: DbSession, user: User, action: str, doc: KnowledgeDocument | None, **detail: object) -> None:
+    """An administrator looking at an advocate's private document is recorded (who and which, never content)."""
+    if user.role == "admin" and doc is not None and doc.owner_id is not None:
+        audit.record(db, user, action, "document", doc.id, **detail)
+        db.commit()
+
+
+def _out(user: User, doc: KnowledgeDocument, owners: dict[uuid.UUID, str] | None = None) -> DocumentOut:
     state, reason = knowledge.effective_status(doc)
     is_client = user.role == "petitioner"
     return DocumentOut(
@@ -60,6 +75,7 @@ def _out(user: User, doc: KnowledgeDocument) -> DocumentOut:
         )
         if doc.details
         else None,
+        owner=(owners or {}).get(doc.owner_id) if doc.owner_id is not None else None,
     )
 
 
@@ -86,7 +102,12 @@ def list_documents(
 ) -> list[DocumentOut]:
     filters = {"type": type, "court": court, "year": year, "act": act, "section": section, "case": case}
     docs = knowledge.list_documents(db, user, q, kind, status_filter, {k: v for k, v in filters.items() if v})
-    return [_out(user, d) for d in docs]
+    private = [d for d in docs if d.owner_id is not None]
+    if user.role == "admin" and private:
+        audit.record(db, user, "knowledge.private.list", "document", None, shown=len(private))
+        db.commit()
+    owners = _owners(db, user, docs)
+    return [_out(user, d, owners) for d in docs]
 
 
 @router.get("/documents/filters", response_model=FilterOptions)
@@ -112,6 +133,7 @@ def remap(user: CurrentUser, db: DbSession) -> RemapOut:
 @router.get("/documents/{document_id}/details", response_model=DetailsOut)
 def get_details(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> DetailsOut:
     doc = _visible_doc(db, user, document_id)
+    _audit_private(db, user, "knowledge.private.details", doc)
     fields = {name: (doc.details or {}).get(name) or metadata.field() for name in metadata.FIELDS}
     return DetailsOut(
         document_id=doc.id, can_edit=knowledge.can_edit_details(user, doc), text_quality=doc.text_quality, fields=fields
@@ -168,10 +190,19 @@ async def add_document(
 def read_passage(passage_id: uuid.UUID, user: CurrentUser, db: DbSession) -> PassageOut:
     """The text a citation points to. Only passages the person may use are shown; anything else,
     including a passage that has since been removed, is not found."""
-    passage = db.scalar(select(LegalSource).where(LegalSource.id == passage_id, visible_to(user if user.role != "admin" else None)))
+    if user.role == "admin":  # administrators may read private passages too; each one is audited
+        passage = db.scalar(select(LegalSource).where(LegalSource.id == passage_id))
+        if passage is not None and passage.document_id is not None:
+            owning = db.get(KnowledgeDocument, passage.document_id)
+            if owning is None or owning.status != "ready":
+                passage = None
+    else:
+        passage = db.scalar(select(LegalSource).where(LegalSource.id == passage_id, visible_to(user)))
     if passage is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Source not found")
     doc = db.get(KnowledgeDocument, passage.document_id) if passage.document_id else None
+    if passage.owner_id is not None:
+        _audit_private(db, user, "knowledge.private.passage", doc, passage_id=str(passage.id))
     return PassageOut(
         id=passage.id,
         text=passage.text,

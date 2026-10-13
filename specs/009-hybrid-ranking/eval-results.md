@@ -92,3 +92,28 @@ queries for a question naming a section).
 - Pinned passages were exempt from the 2-per-document cap, so a named judgment filled all 5 places. **Fixed**:
   pins count toward the cap (FR-004); they still come first.
 - Re-run after both fixes: the measurements above are unchanged.
+
+## Word overlap is not enough (2026-10-13)
+
+Found from a live question ("Why was the Tahsildar's earlier order found to be wrong"): the answer cited class
+notes on ultra vires, attempt and remand. They shared the words "order", "found", "wrong" and "earlier" and so
+skipped the answer check (score 0.31), while the passage that answers it (meaning only, 0.47) was held back by
+the 0.5 bar. Passages outside the checked shortlist were also cited unchecked.
+
+Change: when the answer check ran, a passage sharing words with the question needs at least
+`MIN_RERANK_SCORE_KEYWORD` (0.45), and a passage the check did not judge is not cited (exact references are
+still pinned). Without the answer check the earlier rule (keyword evidence) applies.
+
+Measured with the same cached services: the 69 answerable questions are unchanged at every floor from 0 to 0.5
+(hit@1 0.797, MRR 0.843). On 10 questions the shared corpus cannot answer (GST, passports, cricket, the
+Tahsildar question as asked by someone without the private order, ...), citations fell from 32 to 2:
+
+| Keyword floor | 0 | 0.3 | 0.35 | 0.4 | **0.45** | 0.5 |
+|---|---|---|---|---|---|---|
+| Unanswerable questions with any citation | 8 | 7 | 6 | 5 | **2** | 2 |
+| Wrong citations in total | 30 | 19 | 14 | 6 | **2** | 2 |
+
+Seen live: the free Voyage plan without a payment method allows 3 requests a minute (2 per question). Beyond
+that, search falls back to keywords only and the earlier rule applies, so answers get worse under load. Adding
+a payment method on Voyage (the free tokens still apply) removes this.
+

@@ -14,7 +14,7 @@ os.environ["DATABASE_URL"] = f"sqlite:///{DB.as_posix()}"
 os.environ["COOKIE_SECURE"] = "false"
 os.environ["ENVIRONMENT"] = "test"
 # Browser tests never call the real services, even when backend/.env holds keys.
-for _key in ("VOYAGE_API_KEY", "SARVAM_API_KEY", "ANTHROPIC_API_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_SMS_FROM", "TWILIO_WHATSAPP_FROM", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "FAST2SMS_API_KEY", "FAST2SMS_WHATSAPP_PHONE_NUMBER_ID"):
+for _key in ("VOYAGE_API_KEY", "SARVAM_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_SMS_FROM", "TWILIO_WHATSAPP_FROM", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "FAST2SMS_API_KEY", "FAST2SMS_WHATSAPP_PHONE_NUMBER_ID"):
     os.environ[_key] = ""
 os.environ["ALLOWED_ORIGINS"] = "http://localhost:5174"
 os.environ["LOGIN_ATTEMPTS_PER_WINDOW"] = "100000"

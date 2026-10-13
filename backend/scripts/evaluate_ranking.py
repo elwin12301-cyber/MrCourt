@@ -163,9 +163,13 @@ def run(db, questions: list[dict], mode: str, recorded: dict | None = None) -> d
     return ranks
 
 
-def offline(recorded: dict, questions: list[dict], rs: ranking.RankSettings) -> dict[str, int | None]:
+def offline(
+    recorded: dict, questions: list[dict], rs: ranking.RankSettings, keyword_floor: float | None = None
+) -> dict[str, int | None]:
     """Re-rank the recorded candidates with other settings (safety rule and per-document cap included)."""
-    floor = get_settings().min_rerank_score
+    settings = get_settings()
+    floor = settings.min_rerank_score
+    keyword_floor = settings.min_rerank_score_keyword if keyword_floor is None else keyword_floor
     ranks: dict[str, int | None] = {}
     for q in questions:
         if q["id"] not in recorded:
@@ -173,7 +177,7 @@ def offline(recorded: dict, questions: list[dict], rs: ranking.RankSettings) -> 
             continue
         candidates, ctx = recorded[q["id"]]
         ordered = ranking.rank([replace(c) for c in candidates], ctx, rs)
-        safe = [c for c in ordered if c.keyword_evidence or c.pinned or (ctx.rerank_available and c.rerank is not None and c.rerank >= floor)]
+        safe = [c for c in ordered if ranking.is_safe(c, ctx, floor, keyword_floor)]
         chosen = ranking.diversify(safe, rs.per_document, LIMIT)
         ranks[q["id"]] = first_rank([c.source for c in chosen], q["expected"])
     return ranks

@@ -136,6 +136,19 @@ def _document(c: Candidate) -> object:
     return getattr(c.source, "document_id", None) or getattr(c.source, "instrument", None) or c.source.id
 
 
+def is_safe(c: Candidate, ctx: Context, floor: float, keyword_floor: float) -> bool:
+    """May this passage be cited? Named exactly: yes. Otherwise the answer check decides when it ran: a
+    meaning-only passage needs `floor`; a passage that shares words with the question needs `keyword_floor`
+    (word overlap alone, such as "order" or "wrong", does not make a passage relevant). Without an answer
+    check, keyword evidence is required, as before."""
+    if c.pinned:
+        return True
+    if ctx.rerank_available:
+        # Only the shortlist is checked; a passage outside it was not vouched for, so it is not cited.
+        return c.rerank is not None and c.rerank >= (keyword_floor if c.keyword_evidence else floor)
+    return c.keyword_evidence
+
+
 def diversify(ordered: list[Candidate], per_document: int, limit: int) -> list[Candidate]:
     """At most `per_document` passages from one document; the rest only when nothing else is left. Pinned
     passages count too: a question naming a case pins every page of that judgment."""

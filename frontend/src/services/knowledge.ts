@@ -17,6 +17,8 @@ export interface KnowledgeDocument {
   ocr_pages: number | null;
   created_at: string;
   can_remove: boolean;
+  /** Whose private document it is: sent to administrators only. */
+  owner?: string | null;
   /** Mapped details (feature 008), when the document has been mapped. */
   details: DetailsSummary | null;
 }

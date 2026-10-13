@@ -77,7 +77,7 @@ export function SourceFilters({
           value={value.case ?? ''}
           onChange={(e) => set('case', e.target.value)}
           maxLength={60}
-          placeholder="e.g. W.P. 11944/2013"
+          placeholder="e.g. W.P. 1234/2020"
         />
       </label>
       {any && (

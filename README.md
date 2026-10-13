@@ -88,9 +88,11 @@ Copy `.env.example` to `.env`. Names only are listed there; never commit values.
 | `ALLOWED_ORIGINS` | Public address of the frontend (cross-origin write protection) |
 | `COOKIE_SECURE` | `true` in production (HTTPS only cookies) |
 | `ANTHROPIC_API_KEY` | Enables model-written answers and the assistant. Without it, answers quote the cited passages directly and the assistant is off |
+| `GEMINI_API_KEY`, `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | A free alternative for model-written **answers** (Ask MrCourt) when there is no Anthropic key (default `gemini-3.5-flash`, then `gemini-3.5-flash-lite` when busy). Same prompt, same citation check. The assistant (AI Assistant tab) still needs the Anthropic key. Free-tier limits change and apply per minute and per day; when they are hit the answer falls back to "no reliable source", never to a guess |
 | `ASSISTANT_MODEL` | Model for the assistant (defaults to the answer model) |
 | `VOYAGE_API_KEY` | Meaning-based search (embeddings and reranking, Voyage AI). Without it, search is by keywords only |
 | `EMBEDDING_MODEL`, `RERANK_MODEL`, `MIN_RERANK_SCORE` | Voyage models and the score a meaning-only passage needs before it is cited (default 0.5, measured) |
+| `MIN_RERANK_SCORE_KEYWORD` | The score a passage that only shares words with the question needs before it is cited, when the answer check ran (default 0.45, measured; 0 turns it off). Passages the answer check did not judge are not cited. |
 | `SARVAM_API_KEY`, `STT_MODEL` | Speech to text for Indian languages (Sarvam AI). Without it, only browser voice works |
 | `OCR_LANGUAGES` | Tesseract language packs for scans, joined with `+` (default `eng+tam`) |
 | `KNOWLEDGE_DIR` | Where uploaded knowledge files are stored (default `knowledge/`, not committed) |
@@ -421,11 +423,16 @@ python scripts/evaluate_ranking.py --questions tests/data/ranking_eval_shared.js
   why every client answer also carries a reminder to ask the lawyer. It is not a substitute for review.
 - **Client updates appear inside MrCourt only.** A client who never opens the app sees nothing except the
   existing hearing reminders (which also need the WhatsApp adapter and a phone number).
-- **Administrators can read private case content.** That is a deliberate choice, protected only by the audit
+- **Administrators can read private case content**, including advocates' private knowledge-base documents, their
+  mapped details (parties, judges, case numbers) and passages (`knowledge.private.*` audit entries). They cannot
+  correct, re-map or remove them. That is a deliberate choice, protected only by the audit
   log. Review it against the DPDP Act and your organisation's policy before launch (task T032 for feature 003),
   and have someone read the audit log regularly.
 - **Question text, passage text and (with the speech option) voice go to Voyage AI and Sarvam AI.** Include these in
   the privacy review (task T036 for feature 005).
+- **Questions and passages go to Google when `GEMINI_API_KEY` is set.** On Google's free tier, prompts may be used to
+  improve Google's products. Do not use the free tier with real client papers; use a paid key (not used for
+  training) or keep the key unset.
 - **Questions and case details go to a third-party AI service** when `ANTHROPIC_API_KEY` is set. Check this,
   the retention of question history, and administrator access to it against the DPDP Act and your policy
   before launch (task T052 for feature 004). Without a key nothing leaves the app.

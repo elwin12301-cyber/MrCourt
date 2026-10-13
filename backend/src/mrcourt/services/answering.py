@@ -91,15 +91,70 @@ class AnthropicGenerator:
                 messages=[{"role": "user", "content": f"Passages:\n\n{body}\n\nQuestion: {question}"}],
             )
             raw = "".join(b.text for b in message.content if getattr(b, "type", "") == "text")
-            start, end = raw.find("{"), raw.rfind("}")
-            data = json.loads(raw[start : end + 1])
-            paragraphs: list[GeneratedParagraph] = []
-            for item in data.get("paragraphs", []):
-                ids = [labelled[s].id for s in item.get("sources", []) if s in labelled]
-                paragraphs.append(GeneratedParagraph(str(item.get("text", "")), ids))
-            return paragraphs
+            return _parse_paragraphs(raw, labelled)
         except Exception:  # fail closed: any provider or parsing problem means "no source"
             logger.warning("Answer generation failed; returning no_reliable_source")
+            return None
+
+
+def _parse_paragraphs(raw: str, labelled: dict[str, LegalSource]) -> list[GeneratedParagraph]:
+    """The model's JSON reply as paragraphs; labels it invented are dropped (citations are verified later)."""
+    start, end = raw.find("{"), raw.rfind("}")
+    data = json.loads(raw[start : end + 1])
+    paragraphs: list[GeneratedParagraph] = []
+    for item in data.get("paragraphs", []):
+        ids = [labelled[s].id for s in item.get("sources", []) if s in labelled]
+        paragraphs.append(GeneratedParagraph(str(item.get("text", "")), ids))
+    return paragraphs
+
+
+class GeminiGenerator:
+    """Google Gemini (has a free tier). Same prompt, same JSON reply, same verification as the other writers."""
+
+    URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    RETRY_AFTER = (3.0, 10.0)  # seconds to wait before another try when the free tier says "slow down"
+
+    def __init__(self, client=None, sleep=None) -> None:  # type: ignore[no-untyped-def]
+        self._client = client
+        self._sleep = sleep
+
+    def generate(
+        self, question: str, passages: list[LegalSource]
+    ) -> list[GeneratedParagraph] | None:
+        import time
+
+        import httpx
+
+        settings = get_settings()
+        labelled = {f"S{i}": p for i, p in enumerate(passages, start=1)}
+        body = "\n\n".join(f"[{label}] {p.citation_label}\n{p.text}" for label, p in labelled.items())
+        payload = {
+            "systemInstruction": {"parts": [{"text": SYSTEM_PROMPT}]},
+            "contents": [{"role": "user", "parts": [{"text": f"Passages:\n\n{body}\n\nQuestion: {question}"}]}],
+            "generationConfig": {"responseMimeType": "application/json", "maxOutputTokens": 3000, "temperature": 0.2},
+        }
+        sleep = self._sleep or time.sleep
+        try:
+            client = self._client or httpx.Client(timeout=60)
+            headers = {"x-goog-api-key": settings.gemini_api_key}
+            models = [m for m in dict.fromkeys((settings.gemini_model, settings.gemini_fallback_model)) if m]
+            for model in models:
+                url = self.URL.format(model=model)
+                for wait in (*self.RETRY_AFTER, None):
+                    response = client.post(url, headers=headers, json=payload)
+                    if response.status_code in (429, 500, 503) and wait is not None:
+                        sleep(wait)
+                        continue
+                    break
+                if response.status_code not in (429, 500, 503):
+                    break  # answered, or refused for a reason another model will not change
+                logger.warning("Gemini model %s is busy or out of quota; trying the next one", model)
+            response.raise_for_status()
+            parts = response.json()["candidates"][0]["content"]["parts"]
+            raw = "".join(str(part.get("text", "")) for part in parts if not part.get("thought"))
+            return _parse_paragraphs(raw, labelled)
+        except Exception:  # fail closed, as for every provider
+            logger.warning("Gemini answer generation failed; returning no_reliable_source")
             return None
 
 
@@ -115,8 +170,11 @@ def set_generator(generator: AnswerGenerator | None) -> None:
 def get_generator() -> AnswerGenerator:
     if _generator_override is not None:
         return _generator_override
-    if get_settings().anthropic_api_key:
+    settings = get_settings()
+    if settings.anthropic_api_key:
         return AnthropicGenerator()
+    if settings.gemini_api_key:
+        return GeminiGenerator()
     return ExtractiveGenerator()
 
 

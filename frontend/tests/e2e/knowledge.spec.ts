@@ -48,7 +48,7 @@ test('an administrator adds a shared source, it is cited in answers, and removin
   }
 });
 
-test('an advocate’s private note is theirs alone: not listed, not used, not cited for anyone else', async ({ browser, page }) => {
+test('an advocate’s private note is hidden from clients and not used for them; the administrator sees it with its owner', async ({ browser, page }) => {
   const s = await createClientScenario(browser, page);
   const admin = await newAdminPage(browser);
   try {
@@ -73,7 +73,10 @@ test('an advocate’s private note is theirs alone: not listed, not used, not ci
 
     await admin.page.goto('/ask/knowledge');
     await expect(admin.page.getByRole('heading', { name: 'Knowledge Assistant', level: 1 })).toBeVisible();
-    await expect(admin.page.locator('tbody tr', { hasText: `Mine ${id}` })).toHaveCount(0);
+    // Administrators see advocates' private documents (each view is recorded), but cannot remove them.
+    const adminRow = admin.page.locator('tbody tr', { hasText: `Mine ${id}` });
+    await expect(adminRow).toContainText('Private ·');
+    await expect(adminRow.getByRole('button', { name: /Remove/ })).toHaveCount(0);
   } finally {
     await admin.close();
     await s.close();

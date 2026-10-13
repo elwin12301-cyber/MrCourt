@@ -123,8 +123,8 @@ def workspace_questions(
 
 @router.get("/questions/{question_id}/ranking", response_model=RankingExplanation)
 def question_ranking(question_id: uuid.UUID, admin: Admin, db: DbSession) -> RankingExplanation:
-    """Why each source of an answer ranked where it did (feature 009). Passages from anyone's private
-    documents are shown only as hidden rows: their scores, never their title, case or text."""
+    """Why each source of an answer ranked where it did (feature 009). Administrators see advocates' private
+    passages too (the view is audited); a passage that no longer exists is a hidden row."""
     question = db.get(Question, question_id)
     if question is None or question.answer is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Question not found")
@@ -136,7 +136,9 @@ def question_ranking(question_id: uuid.UUID, admin: Admin, db: DbSession) -> Ran
     passages = []
     for item in stored.get("passages", []):  # type: ignore[union-attr]
         source = db.get(LegalSource, uuid.UUID(str(item["source_id"])))
-        hidden = source is None or source.owner_id is not None
+        # Administrators may see advocates' private documents (this view is audited above); only a passage
+        # that no longer exists is hidden.
+        hidden = source is None
         passages.append(
             {
                 "position": item["position"],

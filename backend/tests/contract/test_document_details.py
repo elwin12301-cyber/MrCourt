@@ -5,7 +5,7 @@ from pathlib import Path
 from helpers import make_document, sign_in
 from sqlalchemy import select
 
-from mrcourt.models import AuditEntry, KnowledgeDocument, User
+from mrcourt.models import AuditEntry, KnowledgeDocument, LegalSource, User
 from mrcourt.services import metadata
 
 API = "/api/v1/knowledge"
@@ -44,10 +44,35 @@ def test_the_owner_sees_every_field_with_its_confidence(advocate_client, db):
     assert row["details"]["short"] == "Judgment · Madras High Court · 19 Mar 2024 · S.A. 2207/2018"
 
 
-def test_nobody_else_sees_private_details(petitioner_client, admin_client, db):
+def test_clients_and_other_advocates_never_see_private_details(advocate_client, second_client, db):
     doc = _private_judgment(db)
-    assert petitioner_client.get(f"{API}/documents/{doc.id}/details").status_code == 404
-    assert admin_client.get(f"{API}/documents/{doc.id}/details").status_code == 404
+    sign_in(second_client, "anita.sharma@example.com")
+    assert second_client.get(f"{API}/documents/{doc.id}/details").status_code == 404
+    assert all(d["id"] != str(doc.id) for d in second_client.get(f"{API}/documents").json())
+    other = User(role="advocate", full_name="Other Advocate", email="other.advocate@example.com", username="otheradv",
+                 password_hash="x")
+    db.add(other)
+    db.commit()
+    theirs = _private_judgment(db, owner_email="other.advocate@example.com")
+    assert advocate_client.get(f"{API}/documents/{theirs.id}/details").status_code == 404
+    assert all(d["id"] != str(theirs.id) for d in advocate_client.get(f"{API}/documents").json())
+
+
+def test_administrators_see_private_documents_and_every_view_is_audited(admin_client, db):
+    doc = _private_judgment(db)
+    row = next(d for d in admin_client.get(f"{API}/documents").json() if d["id"] == str(doc.id))
+    assert row["scope"] == "private" and row["owner"] == "rohan" and row["can_remove"] is False
+    body = admin_client.get(f"{API}/documents/{doc.id}/details").json()
+    assert body["fields"]["court"]["value"] == "Madras High Court"
+    assert body["can_edit"] is False  # seeing is not correcting: only the owner corrects
+    assert admin_client.patch(f"{API}/documents/{doc.id}/details", json={"fields": {"court": "X"}}).status_code == 403
+    passage = db.scalar(select(LegalSource).where(LegalSource.document_id == doc.id))
+    read = admin_client.get(f"{API}/passages/{passage.id}")
+    assert read.status_code == 200 and read.json()["scope"] == "private"
+    actions = [e.action for e in db.scalars(select(AuditEntry))]
+    assert {"knowledge.private.list", "knowledge.private.details", "knowledge.private.passage"} <= set(actions)
+    entries = db.scalars(select(AuditEntry).where(AuditEntry.action.like("knowledge.private.%"))).all()
+    assert "Velan" not in json.dumps([e.detail for e in entries])  # who and which, never content
 
 
 def test_a_correction_is_kept_when_mapped_again(advocate_client, db):

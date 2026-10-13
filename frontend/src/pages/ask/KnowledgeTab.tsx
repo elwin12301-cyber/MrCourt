@@ -123,7 +123,7 @@ function Row({ doc }: { doc: KnowledgeDocument }) {
         {doc.details?.text_quality === 'unreadable' && <small>Text could not be read: needs OCR</small>}
       </td>
       <td>{KIND_LABEL[doc.kind]}</td>
-      <td>{doc.scope === 'shared' ? 'Shared' : 'Private to you'}</td>
+      <td>{doc.scope === 'shared' ? 'Shared' : doc.owner ? `Private · ${doc.owner}` : 'Private to you'}</td>
       <td>
         <Chip tone={TONE[doc.status]}>{STATUS_LABEL[doc.status]}</Chip>
         {doc.ocr_pages ? <small>{doc.ocr_pages === 1 ? '1 page' : `${doc.ocr_pages} pages`} read by OCR</small> : null}

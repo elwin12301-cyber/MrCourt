@@ -461,14 +461,9 @@ def _hybrid_search(
         ctx.rerank_available = True
     ordered = ranker.rank(list(candidates.values()), ctx, rs)
 
-    # Safety: a passage without keyword evidence is used only when the answer check vouches for it, or the
-    # question named it exactly. Without an answer check, keyword evidence is required, as before.
-    floor = settings.min_rerank_score
-    safe = [
-        c
-        for c in ordered
-        if c.keyword_evidence or c.pinned or (ctx.rerank_available and c.rerank is not None and c.rerank >= floor)
-    ]
+    # Safety: the answer check must vouch for a passage (a lower bar when it shares words with the question),
+    # unless the question named it exactly. Without an answer check, keyword evidence is required, as before.
+    safe = [c for c in ordered if ranker.is_safe(c, ctx, settings.min_rerank_score, settings.min_rerank_score_keyword)]
     chosen = ranker.diversify(safe, rs.per_document, max(limit, 1) * 3)
     hits = _current_law(
         db, [Retrieved(c.source, c.coverage, c.bm25, c.rerank if c.rerank is not None else c.meaning) for c in chosen]

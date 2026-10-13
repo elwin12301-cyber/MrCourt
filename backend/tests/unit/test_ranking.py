@@ -111,3 +111,21 @@ def test_pinned_passages_count_toward_the_cap() -> None:
     chosen = diversify(named_case + others, per_document=2, limit=5)
     assert [c.pinned for c in chosen[:2]] == [True, True]
     assert sum(1 for c in chosen if c.source.document_id == doc) == 2
+
+
+def test_word_overlap_alone_does_not_make_a_passage_safe_when_the_answer_check_ran() -> None:
+    from mrcourt.services.ranking import is_safe
+
+    checked = Context(rerank_available=True)
+    assert not is_safe(Candidate(src(), keyword_evidence=True, rerank=0.31), checked, 0.5, 0.45)
+    assert is_safe(Candidate(src(), keyword_evidence=True, rerank=0.46), checked, 0.5, 0.45)
+    assert not is_safe(Candidate(src(), rerank=0.47), checked, 0.5, 0.45)  # meaning only: the higher bar
+    assert is_safe(Candidate(src(), pinned=True, rerank=0.01), checked, 0.5, 0.45)  # named exactly
+    assert is_safe(Candidate(src(), keyword_evidence=True), Context(rerank_available=False), 0.5, 0.45)  # no check: as before
+    assert is_safe(Candidate(src(), keyword_evidence=True, rerank=0.1), checked, 0.5, 0.0)  # 0 turns it off
+
+
+def test_a_passage_the_answer_check_did_not_judge_is_not_cited_once_it_ran() -> None:
+    from mrcourt.services.ranking import is_safe
+
+    assert not is_safe(Candidate(src(), keyword_evidence=True), Context(rerank_available=True), 0.5, 0.45)

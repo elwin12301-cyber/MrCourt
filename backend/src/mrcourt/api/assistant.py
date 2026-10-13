@@ -27,7 +27,8 @@ PASSAGES_ONLY_NOTICE = (
 
 @router.get("/status", response_model=AssistantStatus)
 def get_status(user: CurrentUser) -> AssistantStatus:
-    full = bool(get_settings().anthropic_api_key)
+    settings = get_settings()
+    full = bool(settings.anthropic_api_key or settings.gemini_api_key)
     return AssistantStatus(
         answers="full" if full else "passages",
         assistant=assistant.available() and user.role in ("advocate", "petitioner"),

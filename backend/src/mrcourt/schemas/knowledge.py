@@ -29,6 +29,7 @@ class DocumentOut(BaseModel):
     created_at: datetime
     can_remove: bool
     details: DetailsSummary | None = None
+    owner: str | None = None  # whose private document it is; shown to administrators only
 
 
 class PassageOut(BaseModel):

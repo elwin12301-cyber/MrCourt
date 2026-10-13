@@ -38,17 +38,17 @@ def test_unknown_question(admin_client):
     assert admin_client.get(f"{API}/admin/questions/{uuid.uuid4()}/ranking").status_code == 404
 
 
-def test_another_users_private_document_is_hidden(advocate_client, admin_client, db):
+def test_administrators_see_private_passages_in_the_explanation(advocate_client, admin_client, db):
     rohan = db.scalar(select(User).where(User.email == "rohan.sharma@example.com"))
     make_document(db, title="WP 11944-2013 Order", citation="WP 11944-2013 Order", kind="note", owner=rohan,
                   passages=["W.P.No.11944 of 2013. The writ petition is allowed; zanzibar order set aside."])
     db.commit()
     qid = _ask(advocate_client, "Summarise W.P. 11944/2013 zanzibar order")
     body = admin_client.get(f"{API}/admin/questions/{qid}/ranking").json()
-    private = [p for p in body["passages"] if p["hidden"]]
-    assert private and private[0]["label"] is None
-    assert all(s["name"] != "exact_reference" for p in private for s in p["signals"])
-    assert "11944" not in str(private)
+    assert not [p for p in body["passages"] if p["hidden"]]
+    first = body["passages"][0]
+    assert first["label"].startswith("WP 11944-2013 Order")
+    assert any(s["name"] == "exact_reference" for s in first["signals"])
 
 
 def test_answers_from_before_this_feature_say_not_recorded(advocate_client, admin_client, db, monkeypatch):

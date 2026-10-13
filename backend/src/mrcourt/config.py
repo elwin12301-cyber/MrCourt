@@ -14,12 +14,18 @@ class Settings(BaseSettings):
     session_max_age_seconds: int = 60 * 60 * 12
     cookie_secure: bool = True
     anthropic_api_key: str = ""
+    gemini_api_key: str = ""  # Google Gemini, free tier: writes the Ask MrCourt answers when there is no Anthropic key
+    gemini_model: str = "gemini-3.5-flash"
+    gemini_fallback_model: str = "gemini-3.5-flash-lite"  # tried when the main model is busy or out of free quota
     embedding_api_key: str = ""  # unused; kept so older environment files still load
     voyage_api_key: str = ""  # meaning-based search (embeddings)
     embedding_model: str = "voyage-3.5"
     min_vector_score: float = 0.2  # a floor only: raw similarity cannot tell relevant from unrelated
     rerank_model: str = "rerank-2.5"
     min_rerank_score: float = 0.5  # what a meaning-only passage must score to be cited (measured, see quality-results)
+    # A passage that only shares words with the question is dropped when the answer check scores it below this
+    # (hybrid ranking; 0 turns it off). Measured in specs/009-hybrid-ranking/eval-results.md.
+    min_rerank_score_keyword: float = 0.45
     # Hybrid ranking (feature 009). "rrf" keeps the earlier rank-fusion ordering (baseline and rollback).
     ranking_mode: str = "hybrid"
     rank_w_keyword: float = 0.10

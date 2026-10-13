@@ -43,6 +43,8 @@ def effective_status(doc: KnowledgeDocument) -> tuple[str, str | None]:
 
 
 def visible_documents(user: User):  # type: ignore[no-untyped-def]
+    if user.role == "admin":  # administrators see every document, private ones too (views are audited)
+        return select(KnowledgeDocument)
     condition = KnowledgeDocument.owner_id.is_(None)
     if user.role == "advocate":
         condition = or_(condition, KnowledgeDocument.owner_id == user.id)
@@ -95,7 +97,7 @@ def filter_options(db: Session, user: User) -> dict[str, list]:  # type: ignore[
 
 def can_view_details(user: User, doc: KnowledgeDocument) -> bool:
     if doc.owner_id is not None:
-        return doc.owner_id == user.id
+        return doc.owner_id == user.id or user.role == "admin"
     return user.role != "petitioner" or doc.status == "ready"
 
 
