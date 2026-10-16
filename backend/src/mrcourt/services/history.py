@@ -34,6 +34,7 @@ def _item(q: Question) -> HistoryItem:
         input_method=q.input_method,  # type: ignore[arg-type]
         mode=q.mode,  # type: ignore[arg-type]
         outcome_label=outcome_label(q.answer, q.mode),  # type: ignore[arg-type]
+        channel="whatsapp" if q.channel == "whatsapp" else "app",
     )
 
 

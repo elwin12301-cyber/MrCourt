@@ -3,6 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { IconSprite } from './components/Icon';
 import AdminAudit from './pages/AdminAudit';
+import AdminMessages from './pages/AdminMessages';
 import AdminCaseView from './pages/AdminCaseView';
 import AdminCases from './pages/AdminCases';
 import AdminOverview from './pages/AdminOverview';
@@ -101,6 +102,7 @@ export default function App() {
             <Route path="/admin/cases/:caseId" element={<AdminOnly><AdminCaseView /></AdminOnly>} />
             <Route path="/admin/verifications" element={<AdminOnly><AdminVerifications /></AdminOnly>} />
             <Route path="/admin/knowledge" element={<Navigate to="/ask/knowledge" replace />} />
+            <Route path="/admin/messages" element={<AdminOnly><AdminMessages /></AdminOnly>} />
             <Route path="/admin/audit" element={<AdminOnly><AdminAudit /></AdminOnly>} />
           </Route>
         </Route>

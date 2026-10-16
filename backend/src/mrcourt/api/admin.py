@@ -30,8 +30,10 @@ from mrcourt.schemas.admin import (
 )
 from mrcourt.schemas.auth import PendingVerification, VerificationDecision
 from mrcourt.schemas.history import HistoryPage, WorkspacePage
+from mrcourt.schemas.whatsapp import FailuresPage, SummaryOut
 from mrcourt.services import admin_cases, admin_users, audit, history
 from mrcourt.services import documents as document_service
+from mrcourt.services.whatsapp import admin as whatsapp_admin
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -272,3 +274,32 @@ def audit_log(_: Admin, db: DbSession, limit: int = Query(default=50, ge=1, le=2
         items=items,
         next_before=f"{items[-1].created_at.isoformat()}|{last.id}" if last else None,
     )
+
+
+# ---- WhatsApp messages (feature 010): counts, failures and service health, never message text -------
+
+
+@router.get("/messages/summary", response_model=SummaryOut)
+def messages_summary(_: Admin, db: DbSession, days: int = Query(default=7, ge=1, le=90)) -> SummaryOut:
+    return whatsapp_admin.summary(db, days)
+
+
+@router.get("/messages/failures", response_model=FailuresPage)
+def message_failures(
+    admin: Admin,
+    db: DbSession,
+    days: int = Query(default=7, ge=1, le=90),
+    limit: int = Query(default=50, ge=1, le=100),
+    before: str | None = None,
+) -> FailuresPage:
+    """Who a WhatsApp message failed for and why (a plain code). Opening the list is recorded as a count."""
+    page = whatsapp_admin.failures(db, admin, days, limit, history.parse_cursor(before) if before else None)
+    db.commit()
+    return page
+
+
+@router.post("/messages/{message_id}/resend", status_code=status.HTTP_202_ACCEPTED)
+def message_resend(message_id: uuid.UUID, admin: Admin, db: DbSession) -> dict[str, str]:
+    new = whatsapp_admin.resend(db, admin, message_id)
+    db.commit()
+    return {"status": new.status}

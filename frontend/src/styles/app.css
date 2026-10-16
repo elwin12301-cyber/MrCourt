@@ -210,3 +210,12 @@ a.statlink:hover,a.statlink:focus-visible{border-color:var(--gold)}
 .docdetails dd small{color:var(--muted)}
 .srcdetails{display:block;color:var(--muted);font-size:12px;font-weight:400}
 @media (max-width:640px){.docdetails dl{grid-template-columns:1fr}.filters .field{max-width:none}}
+/* WhatsApp channel (feature 010) */
+.wa{border-top:1px solid var(--line);margin-top:4px}
+.wa-note{margin:0 4px 8px}
+.wa-kinds{list-style:none;margin:0;padding:0}
+.wa-kind{align-items:flex-start}
+.wa-kind-text{display:flex;flex-direction:column;gap:2px;min-width:0;color:var(--ink)}
+.wa-kind-text small{margin:0}
+.wa-actions{display:flex;gap:10px;padding:4px 4px 12px}
+.toggle:disabled{opacity:.6}

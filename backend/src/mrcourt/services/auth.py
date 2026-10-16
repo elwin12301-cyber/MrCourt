@@ -1,6 +1,5 @@
 """Registration, password sign-in, one-time codes, phone verification and password reset."""
 
-import logging
 import re
 import secrets
 from datetime import timedelta
@@ -14,7 +13,7 @@ from mrcourt.db.base import utcnow
 from mrcourt.models import OtpChallenge, User, UserSettings
 from mrcourt.schemas.auth import RegisterRequest
 from mrcourt.services import ratelimit
-from mrcourt.services.notify import Message, get_notifier
+from mrcourt.services.whatsapp import outbox
 from mrcourt.services.session import hash_password, verify_password
 
 RESERVED_USERNAMES = frozenset({"admin", "administrator", "root", "support", "mrcourt", "system", "moderator", "staff", "help", "info"})
@@ -144,12 +143,10 @@ def _check_code(db: Session, user: User, purpose: str, code: str) -> bool:
     return True
 
 
-def _deliver(message: Message) -> None:
-    """Sends a code. A sending failure must not change the reply (it would reveal that the account exists)."""
-    try:
-        get_notifier().send(message)
-    except Exception:  # noqa: BLE001 - the text-message service being down or refusing is not the caller's error
-        logging.getLogger(__name__).warning("A code could not be delivered; the person can ask for another")
+def _deliver(db: Session, user: User, text: str, code: str) -> None:
+    """Sends a code, by WhatsApp when the person chose it and by text otherwise. A sending failure must not
+    change the reply (it would reveal that the account exists)."""
+    outbox.send_code(db, user, text, code)
 
 
 def request_otp(db: Session, identifier: str) -> None:
@@ -159,10 +156,7 @@ def request_otp(db: Session, identifier: str) -> None:
     if user is None or user.status != "active":
         return
     code = _issue_code(db, user, "login", get_settings().otp_ttl_seconds)
-    contact = user.phone or user.email or ""
-    _deliver(
-        Message(contact=contact, text=f"Your MrCourt code is {code}. It expires in 5 minutes.", code=code)
-    )
+    _deliver(db, user, f"Your MrCourt code is {code}. It expires in 5 minutes.", code)
 
 
 def verify_otp(db: Session, identifier: str, code: str) -> User:
@@ -184,13 +178,7 @@ def request_phone_code(db: Session, user: User) -> None:
         raise HTTPException(status.HTTP_409_CONFLICT, "This phone number is already verified")
     ratelimit.hit(f"phone-code:{user.id}", limit=5, window_seconds=60 * 60)
     code = _issue_code(db, user, "phone")
-    _deliver(
-        Message(
-            contact=user.phone,
-            text=f"Your MrCourt verification code is {code}. It expires in {CODE_MINUTES} minutes.",
-            code=code,
-        )
-    )
+    _deliver(db, user, f"Your MrCourt verification code is {code}. It expires in {CODE_MINUTES} minutes.", code)
 
 
 def verify_phone_code(db: Session, user: User, code: str) -> None:
@@ -211,14 +199,11 @@ def forgot_password(db: Session, identifier: str) -> None:
         return
     code = _issue_code(db, user, "reset")
     _deliver(
-        Message(
-            contact=user.phone,
-            text=(
-                f"Your MrCourt password reset code is {code}. It expires in {CODE_MINUTES} minutes. "
-                "If you did not ask for it, ignore this message."
-            ),
-            code=code,
-        )
+        db,
+        user,
+        f"Your MrCourt password reset code is {code}. It expires in {CODE_MINUTES} minutes. "
+        "If you did not ask for it, ignore this message.",
+        code,
     )
 
 

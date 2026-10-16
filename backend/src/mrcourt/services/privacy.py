@@ -153,6 +153,16 @@ def deactivate(db: Session, user: User) -> None:
     db.execute(delete(Question).where(Question.user_id == user.id))
     delete_private_documents(db, user)  # the person's own notes and their files go with them
     db.execute(delete(OtpChallenge).where(OtpChallenge.user_id == user.id))
+    # WhatsApp: the link, what the person agreed to, delivery records and any open case list go with them
+    # (feature 010). Incoming-message rows keep no reference to the person.
+    from mrcourt.models import ConversationState, InboundMessage, Message, MessageConsent, WhatsAppLink
+
+    db.execute(delete(Message).where(Message.user_id == user.id))
+    db.execute(delete(MessageConsent).where(MessageConsent.user_id == user.id))
+    db.execute(delete(ConversationState).where(ConversationState.user_id == user.id))
+    db.execute(delete(WhatsAppLink).where(WhatsAppLink.user_id == user.id))
+    for row in db.scalars(select(InboundMessage).where(InboundMessage.user_id == user.id)):
+        row.user_id, row.question_id, row.payload = None, None, None
     # A client's own messages and notices go with them; the advocate's case records stay.
     db.execute(delete(ClientQuestion).where(ClientQuestion.client_id == user.id))
     db.execute(delete(ClientUpdate).where(ClientUpdate.client_id == user.id))

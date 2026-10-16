@@ -64,51 +64,10 @@ def test_codes_use_quick_sms_unless_the_otp_route_is_switched_on(sent) -> None:
     assert sent[0][1]["route"] == "q" and "123456" in sent[0][1]["message"]
 
 
-WA = ("1234567890", "11", "22")  # phone number id, code template, reminder template
-
-
-def test_a_code_also_goes_to_whatsapp_with_its_template(sent) -> None:
-    Fast2SmsNotifier("KEY", whatsapp=WA).send(Message(contact="+91 98765 43210", text="Your code is 123456.", code="123456"))
-    sms, whatsapp = sent
-    assert sms[1]["route"] == "q"
-    url = whatsapp[0].full_url
-    assert url.startswith("https://www.fast2sms.com/dev/whatsapp?")
-    for part in ("message_id=11", "phone_number_id=1234567890", "numbers=9876543210", "variables_values=123456"):
-        assert part in url
-    assert whatsapp[0].get_header("Authorization") == "KEY"
-
-
-def test_a_reminder_goes_to_whatsapp_with_the_case_and_the_time(sent) -> None:
-    message = Message(
-        contact="9876543210", text="x", kind="reminder", variables={"case": "A | B", "when": "in 5 days, on 15 Oct 2026"}
-    )
-    Fast2SmsNotifier("KEY", whatsapp=WA).send(message)
-    url = sent[1][0].full_url
-    assert "message_id=22" in url and "variables_values=A+%2F+B%7Cin+5+days" in url  # a pipe in the title cannot split values
-
-
-def test_without_a_template_only_sms_is_used(sent) -> None:
-    Fast2SmsNotifier("KEY", whatsapp=("1", "", "22")).send(Message(contact="9876543210", text="x", code="123456"))
-    assert len(sent) == 1
-
-
-def test_whatsapp_failing_does_not_stop_the_sms_and_both_failing_is_an_error(monkeypatch, sent) -> None:
-    sent.state["reply"] = {"return": True}
-    calls = []
-
-    def fake(request, timeout):
-        calls.append(request.full_url)
-        if "/dev/whatsapp" in request.full_url:
-            raise OSError("down")
-        return _Reply({"return": True})
-
-    monkeypatch.setattr("urllib.request.urlopen", fake)
-    Fast2SmsNotifier("KEY", whatsapp=WA).send(Message(contact="9876543210", text="x", code="123456"))  # SMS went
-    assert len(calls) == 2
-
-    def all_fail(request, timeout):
+def test_a_refusal_or_an_error_is_raised_for_the_caller_to_record(monkeypatch, sent) -> None:
+    def fails(request, timeout):
         raise OSError("down")
 
-    monkeypatch.setattr("urllib.request.urlopen", all_fail)
-    with pytest.raises(RuntimeError):
-        Fast2SmsNotifier("KEY", whatsapp=WA).send(Message(contact="9876543210", text="x", code="123456"))
+    monkeypatch.setattr("urllib.request.urlopen", fails)
+    with pytest.raises(OSError):
+        Fast2SmsNotifier("KEY").send(Message(contact="9876543210", text="x", code="123456"))

@@ -28,6 +28,18 @@ ACTION_LABELS = {
     "knowledge.add": "Added a shared knowledge source",
     "knowledge.remove": "Removed a shared knowledge source",
     "history.view": "Opened a person's question history",
+    "knowledge.private.list": "Opened advocates' private documents",
+    "knowledge.private.details": "Opened a private document's details",
+    "knowledge.private.passage": "Read the text of a private document",
+    "knowledge.private.edit": "Corrected a private document's details",
+    "knowledge.private.remap": "Mapped the details of all documents again",
+    "knowledge.private.remove": "Removed a private document",
+    "whatsapp.link": "Linked a WhatsApp number",
+    "whatsapp.unlink": "Unlinked a WhatsApp number",
+    "whatsapp.consent": "Changed a WhatsApp message choice",
+    "whatsapp.stop": "Replied STOP to WhatsApp messages",
+    "whatsapp.admin.failures.view": "Opened the WhatsApp failure list",
+    "whatsapp.admin.resend": "Re-sent a failed WhatsApp message",
 }
 
 

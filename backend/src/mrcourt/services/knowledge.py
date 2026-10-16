@@ -102,9 +102,9 @@ def can_view_details(user: User, doc: KnowledgeDocument) -> bool:
 
 
 def can_edit_details(user: User, doc: KnowledgeDocument) -> bool:
-    if doc.owner_id is not None:
-        return user.role == "advocate" and doc.owner_id == user.id
-    return user.role == "admin"
+    if user.role == "admin":  # shared or private; correcting someone's private document is audited
+        return True
+    return user.role == "advocate" and doc.owner_id == user.id
 
 
 LIST_FIELDS = ("case_numbers", "judges", "acts")
@@ -152,6 +152,8 @@ def update_details(db: Session, user: User, doc: KnowledgeDocument, fields: dict
     metadata.apply(db, doc, {})
     if doc.owner_id is None:
         audit.record(db, user, "knowledge.details.edit", "document", doc.id, fields=sorted(fields))
+    elif user.role == "admin":
+        audit.record(db, user, "knowledge.private.edit", "document", doc.id, fields=sorted(fields))
 
 
 def list_documents(
@@ -177,8 +179,8 @@ def list_documents(
 
 
 def can_remove(user: User, doc: KnowledgeDocument) -> bool:
-    if doc.owner_id is None:
-        return user.role == "admin"
+    if user.role == "admin":  # shared or private; removing someone's private document is audited
+        return True
     return user.role == "advocate" and doc.owner_id == user.id
 
 
@@ -355,6 +357,7 @@ def embed_document(factory: sessionmaker[Session], document_id: uuid.UUID) -> No
 def remove_document(db: Session, user: User, doc: KnowledgeDocument) -> None:
     """Erases the document, its passages and its file. Old answers keep their citation label."""
     title, citation, shared = doc.title, doc.citation, doc.owner_id is None
+    admin_on_private = user.role == "admin" and not shared
     passage_ids = list(db.scalars(select(LegalSource.id).where(LegalSource.document_id == doc.id)))
     if passage_ids:
         for citation_row in db.scalars(select(AnswerCitation).where(AnswerCitation.source_id.in_(passage_ids))):
@@ -371,6 +374,8 @@ def remove_document(db: Session, user: User, doc: KnowledgeDocument) -> None:
     db.delete(doc)
     if shared:
         audit.record(db, user, "knowledge.remove", "document", doc.id, title=title, citation=citation)
+    elif admin_on_private:  # who and which, never the title or content of a private document
+        audit.record(db, user, "knowledge.private.remove", "document", doc.id)
     db.flush()
 
 

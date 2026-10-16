@@ -117,9 +117,11 @@ def filter_options(user: CurrentUser, db: DbSession) -> FilterOptions:
 
 @router.post("/documents/remap", response_model=RemapOut)
 def remap(user: CurrentUser, db: DbSession) -> RemapOut:
-    """Map details again: an administrator for shared documents, an advocate for their own. Corrections are kept."""
+    """Map details again: an administrator for every document, an advocate for their own. Corrections are kept."""
     if user.role == "admin":
-        docs = list(db.scalars(select(KnowledgeDocument).where(KnowledgeDocument.owner_id.is_(None))))
+        docs = list(db.scalars(select(KnowledgeDocument)))
+        if any(d.owner_id is not None for d in docs):
+            audit.record(db, user, "knowledge.private.remap", "document", None, documents=len(docs))
     elif user.role == "advocate":
         docs = list(db.scalars(select(KnowledgeDocument).where(KnowledgeDocument.owner_id == user.id)))
     else:
@@ -220,7 +222,7 @@ def read_passage(passage_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Pas
 @router.delete("/documents/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def remove_document(document_id: uuid.UUID, user: CurrentUser, db: DbSession) -> Response:
     doc = db.get(KnowledgeDocument, document_id)
-    if doc is None or (doc.owner_id is not None and doc.owner_id != user.id):
+    if doc is None or (doc.owner_id is not None and doc.owner_id != user.id and user.role != "admin"):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Source not found")
     if not knowledge.can_remove(user, doc):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "You cannot remove this source")

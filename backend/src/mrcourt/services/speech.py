@@ -22,7 +22,7 @@ class SpeechUnavailable(Exception):
 
 
 class SpeechToText(Protocol):
-    def transcribe(self, wav: bytes, language: str) -> str: ...
+    def transcribe(self, wav: bytes, language: str, codec: str = "wav") -> str: ...
 
 
 class SarvamSpeech:
@@ -32,14 +32,16 @@ class SarvamSpeech:
         self._client = SarvamAI(api_subscription_key=api_key)
         self.model = model
 
-    def transcribe(self, wav: bytes, language: str) -> str:
+    def transcribe(self, wav: bytes, language: str, codec: str = "wav") -> str:
+        """`codec` names the audio format: "wav" from the website, "ogg" or "opus" for WhatsApp voice notes."""
+        mime = {"wav": "audio/wav", "ogg": "audio/ogg", "opus": "audio/ogg", "mp3": "audio/mpeg"}.get(codec, "audio/ogg")
         try:
             response = self._client.speech_to_text.transcribe(
-                file=("turn.wav", io.BytesIO(wav), "audio/wav"),
+                file=(f"turn.{codec}", io.BytesIO(wav), mime),
                 model=self.model,
                 mode="transcribe",
                 language_code=language,
-                input_audio_codec="wav",
+                input_audio_codec=codec,  # type: ignore[arg-type]
             )
             return str(getattr(response, "transcript", "") or "").strip()
         except Exception as exc:  # noqa: BLE001 - the SDK raises many HTTP error types
@@ -53,9 +55,11 @@ class FakeSpeech:
 
     texts: list[str] = field(default_factory=list)
     calls: list[tuple[int, str]] = field(default_factory=list)  # (audio bytes, language)
+    codecs: list[str] = field(default_factory=list)
 
-    def transcribe(self, wav: bytes, language: str) -> str:
+    def transcribe(self, wav: bytes, language: str, codec: str = "wav") -> str:
         self.calls.append((len(wav), language))
+        self.codecs.append(codec)
         return self.texts.pop(0) if self.texts else ""
 
 

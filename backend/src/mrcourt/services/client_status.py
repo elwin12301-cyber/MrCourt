@@ -88,6 +88,9 @@ def notify_clients(
     db: Session, case: Case, kind: str, message: str, entry: TimelineEntry | None = None
 ) -> int:
     """Creates one unread update for every accepted client. Messages never carry private data."""
+    from mrcourt.models import User
+    from mrcourt.services.whatsapp import outbox
+
     count = 0
     for client_id in accepted_client_ids(db, case):
         db.add(
@@ -99,6 +102,9 @@ def notify_clients(
                 message=f"{case.title}: {message}"[:500],
             )
         )
+        client = db.get(User, client_id)
+        if client is not None:
+            outbox.queue_nudge(db, client, "update", case)  # a short "news on this case" note, if they opted in
         count += 1
     db.flush()
     return count

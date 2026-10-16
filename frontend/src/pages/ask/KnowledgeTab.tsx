@@ -169,7 +169,7 @@ function RemapButton({ admin }: { admin: boolean }) {
   return (
     <span style={{ display: 'inline-flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
       <Button variant="ghost" onClick={() => remap.mutate()} disabled={remap.isPending}>
-        {remap.isPending ? 'Mapping…' : admin ? 'Map shared details again' : 'Map my documents again'}
+        {remap.isPending ? 'Mapping…' : admin ? 'Map all documents again' : 'Map my documents again'}
       </Button>
       {summary && (
         <span role="status" className="fine">
@@ -181,7 +181,7 @@ function RemapButton({ admin }: { admin: boolean }) {
   );
 }
 
-/** The sources that feed answers. Administrators manage shared ones, advocates their own notes. */
+/** The sources that feed answers. Advocates manage their own notes; administrators see and manage every document (private ones are audited). */
 export default function KnowledgeTab() {
   const me = useMe().data;
   const [search, setSearch] = useState('');

@@ -8,8 +8,14 @@ from mrcourt.models.legal import Answer, AnswerCitation, LegalSource, Question
 from mrcourt.models.reminder import ReminderLog
 from mrcourt.models.text import TextConversation, TextLine
 from mrcourt.models.user import OtpChallenge, User, UserSettings
+from mrcourt.models.whatsapp import ConversationState, InboundMessage, Message, MessageConsent, WhatsAppLink
 
 __all__ = [
+    "ConversationState",
+    "InboundMessage",
+    "Message",
+    "MessageConsent",
+    "WhatsAppLink",
     "DocumentReference",
     "ActivityEvent",
     "Answer",

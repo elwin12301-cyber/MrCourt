@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { initials } from '../components/AppShell';
 import { ContactCardForm } from '../components/ContactCardForm';
 import { PhoneCodeStep } from '../components/PhoneCodeStep';
+import { WhatsAppCard } from '../components/WhatsAppCard';
 import { DeactivateDialog } from '../components/DeactivateDialog';
 import { Button, Chip } from '../components/ui';
 import { downloadMyData, errorText, useUpdatePhone, useUpdateSettings } from '../services/account';
@@ -179,6 +180,7 @@ export default function Settings() {
               </div>
             )}
           </div>
+          <WhatsAppCard />
           <div className="set">
             <b style={{ fontWeight: 500 }}>Privacy &amp; data (DPDP)</b>
             <button

@@ -5,11 +5,20 @@ import { api } from '../services/api';
 interface DevMessage {
   to: string;
   kind: string;
+  channel: string;
   text: string;
   at: string;
 }
 
-/** Development only: the text messages that would have been sent (codes and reminders). */
+const KIND_NAME: Record<string, string> = {
+  reminder: 'Reminder',
+  code: 'Code',
+  update: 'Case update',
+  activity: 'Client activity',
+  reply: 'Reply',
+};
+
+/** Development only: the messages that would have been sent by text or WhatsApp (codes, reminders, replies). */
 export default function DevMessages() {
   const { data, isError, isLoading } = useQuery({
     queryKey: ['dev-messages'],
@@ -24,7 +33,7 @@ export default function DevMessages() {
       </Link>
       <h1>Development messages</h1>
       <p className="sub">
-        Text messages are not really sent while no text-message service is set up. Here is what would have been sent. This
+        Messages are not really sent while no text-message or WhatsApp service is set up. Here is what would have been sent. This
         page does not exist in production.
       </p>
       {isError && <p role="alert">Not available here: either a real text-message service is set up, or this is not a development setup.</p>}
@@ -33,7 +42,8 @@ export default function DevMessages() {
         {data?.map((m, i) => (
           <li key={`${m.at}-${i}`} className="card">
             <div className="fine" style={{ margin: 0 }}>
-              To {m.to} · {m.kind === 'reminder' ? 'Reminder' : 'Code'} · {new Date(m.at).toLocaleString('en-IN')}
+              To {m.to} · {m.channel === 'whatsapp' ? 'WhatsApp' : 'Text'} · {KIND_NAME[m.kind] ?? 'Message'} ·{' '}
+              {new Date(m.at).toLocaleString('en-IN')}
             </div>
             <p style={{ margin: '6px 0 0' }}>{m.text}</p>
           </li>

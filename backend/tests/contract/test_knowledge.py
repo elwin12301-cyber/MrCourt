@@ -84,10 +84,10 @@ def test_advocates_add_private_notes_only_they_can_see_or_use(client, second_cli
     body = _add(client, title="My note", citation="My note", kind="judgment", text=PHRASE).json()
     assert (body["scope"], body["kind"]) == ("private", "note")
     assert [d["title"] for d in client.get(API).json() if d["scope"] == "private"] == ["My note"]
-    # The administrator sees it, with its owner, but cannot remove it: only the owner can.
+    # The administrator sees it, with its owner, and may remove it (recorded in the audit log).
     admin_row = next(d for d in second_client.get(API).json() if d["title"] == "My note")
-    assert admin_row["owner"] == "rohan" and admin_row["can_remove"] is False
-    assert second_client.delete(f"{API}/{body['id']}").status_code in (403, 404)
+    assert admin_row["owner"] == "rohan" and admin_row["can_remove"] is True
+    assert second_client.delete(f"{API}/{body['id']}").status_code == 204
 
 
 def test_clients_can_read_shared_titles_but_not_add_or_remove(client, second_client):

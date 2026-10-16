@@ -6,7 +6,7 @@ import os
 os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault("ENVIRONMENT", "test")
 # Tests never call the real services, even when a local .env holds keys.
-for _key in ("VOYAGE_API_KEY", "SARVAM_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_SMS_FROM", "TWILIO_WHATSAPP_FROM", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "FAST2SMS_API_KEY", "FAST2SMS_WHATSAPP_PHONE_NUMBER_ID"):
+for _key in ("VOYAGE_API_KEY", "SARVAM_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "WHATSAPP_PROVIDER", "WHATSAPP_ACCESS_TOKEN", "WHATSAPP_APP_SECRET", "WHATSAPP_VERIFY_TOKEN", "WHATSAPP_PHONE_NUMBER_ID", "TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_SMS_FROM", "TWILIO_WHATSAPP_FROM", "TWILIO_API_KEY_SID", "TWILIO_API_KEY_SECRET", "FAST2SMS_API_KEY", "FAST2SMS_WHATSAPP_PHONE_NUMBER_ID", "FAST2SMS_WEBHOOK_SECRET"):
     os.environ[_key] = ""
 
 from collections.abc import Iterator  # noqa: E402
@@ -26,12 +26,43 @@ from mrcourt.services import notify, ratelimit  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
+def _no_real_network(monkeypatch) -> None:
+    """No test may reach the real internet: a fake transport must be given, or the call fails loudly."""
+    import httpx
+
+    def blocked(self, request):  # type: ignore[no-untyped-def]
+        raise RuntimeError(f"A test tried to use the network ({request.url.host}); give it a fake transport")
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", blocked)
+
+    import urllib.request
+
+    def blocked_urlopen(*args, **kwargs):  # type: ignore[no-untyped-def]
+        raise RuntimeError("A test tried to use the network through urllib; replace urlopen in the test")
+
+    monkeypatch.setattr(urllib.request, "urlopen", blocked_urlopen)
+
+
+@pytest.fixture(autouse=True)
 def _reset_in_memory_state() -> Iterator[None]:
     notify.OUTBOX.clear()
     notify.set_notifier(None)
     ratelimit.reset_all()
     yield
     notify.set_notifier(None)
+
+
+@pytest.fixture
+def fake_channel() -> Iterator["FakeChannel"]:
+    """A WhatsApp channel that records what would be sent; incoming calls are plain unsigned JSON."""
+    from helpers_whatsapp import FakeChannel
+
+    from mrcourt.services.whatsapp.channel import set_channel
+
+    channel = FakeChannel()
+    set_channel(channel)
+    yield channel
+    set_channel(None)
 
 
 @pytest.fixture

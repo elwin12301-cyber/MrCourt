@@ -69,6 +69,7 @@ class Question(IdMixin, TimestampMixin, Base):
     input_method: Mapped[str] = mapped_column(String(10), default="typed", nullable=False)  # typed | voice
     mode: Mapped[str] = mapped_column(String(10), default="answer", nullable=False)  # answer | assistant | text
     conversation_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, index=True)  # set for Text Assistant entries
+    channel: Mapped[str] = mapped_column(String(10), default="app", nullable=False)  # app | whatsapp (feature 010)
 
     answer: Mapped["Answer"] = relationship(
         back_populates="question", uselist=False, cascade="all, delete-orphan"

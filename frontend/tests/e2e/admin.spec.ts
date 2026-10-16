@@ -1,7 +1,7 @@
 import { expect, test } from './support/test';
 import { signInAs } from './support/helpers';
 
-const MENU = ['Overview', 'Advocates', 'Clients', 'Cases', 'Verifications', 'Ask MrCourt', 'Audit log', 'Settings'];
+const MENU = ['Overview', 'Advocates', 'Clients', 'Cases', 'Verifications', 'Ask MrCourt', 'Messages', 'Audit log', 'Settings'];
 
 test.describe('administrator', () => {
   test.beforeEach(async ({ page }) => {

@@ -58,6 +58,7 @@ function Row({ item, others }: { item: HistoryItem | WorkspaceItem; others: bool
           {when(item.created_at)} · {ASSISTANT_NAME(item)} ·{' '}
           <Icon name={item.input_method === 'voice' ? 'mic' : 'file'} size={13} style={{ verticalAlign: '-2px' }} />{' '}
           {item.input_method === 'voice' ? 'Voice' : 'Typed'}
+          {item.channel === 'whatsapp' ? ' · Asked on WhatsApp' : ''}
           {asker ? ` · ${asker}` : ''}
         </div>
       </div>

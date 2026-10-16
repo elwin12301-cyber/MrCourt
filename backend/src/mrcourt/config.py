@@ -42,7 +42,22 @@ class Settings(BaseSettings):
     stt_model: str = "saaras:v4"
     ocr_languages: str = "eng+tam"  # Tesseract language packs, joined with +
     max_ocr_pages: int = 60
-    whatsapp_provider_api_key: str = ""
+    # WhatsApp channel (feature 010). "none" keeps everything on the development outbox and SMS.
+    whatsapp_provider: str = "none"  # none | meta | twilio | fast2sms
+    whatsapp_phone_number_id: str = ""  # Meta: the WhatsApp Business phone number's id
+    whatsapp_access_token: str = ""  # Meta: permanent access token
+    whatsapp_app_secret: str = ""  # Meta: signs webhook calls
+    whatsapp_verify_token: str = ""  # Meta: the token typed in the dashboard when the webhook is set up
+    whatsapp_template_code: str = "mrcourt_code"
+    whatsapp_template_reminder: str = "mrcourt_hearing_reminder"
+    whatsapp_template_update: str = "mrcourt_case_update"
+    whatsapp_template_activity: str = "mrcourt_activity"
+    whatsapp_daily_send_cap: int = 500  # template messages per day, all people together
+    whatsapp_nudge_delay_seconds: int = 180  # updates close together are merged into one message
+    whatsapp_questions_per_minute: int = 3
+    whatsapp_questions_per_day: int = 40
+    public_app_url: str = "http://localhost:5173"  # for the "read more" link in WhatsApp answers
+    whatsapp_webhook_url: str = ""  # the exact public address the provider calls (Twilio signs it); empty = PUBLIC_APP_URL + path
     # Text messages through Twilio. A free trial account texts verified numbers by SMS, and the free
     # WhatsApp sandbox messages people who have joined it. Leave empty to use the development outbox.
     twilio_account_sid: str = ""
@@ -50,14 +65,17 @@ class Settings(BaseSettings):
     twilio_api_key_sid: str = ""  # optional: an API key (SK...) and secret can be used instead of the auth token
     twilio_api_key_secret: str = ""
     twilio_sms_from: str = ""  # your Twilio phone number, e.g. +15005550006; empty turns SMS off
-    twilio_whatsapp_from: str = ""  # the sandbox number, e.g. whatsapp:+14155238886; empty turns WhatsApp off
+    twilio_whatsapp_from: str = ""  # the sandbox number, e.g. whatsapp:+14155238886 (used by the WhatsApp channel when WHATSAPP_PROVIDER=twilio)
     fast2sms_api_key: str = ""  # Indian SMS service: codes use its OTP route, reminders its Quick SMS route
-    fast2sms_whatsapp_phone_number_id: str = ""  # your WhatsApp Business number's id, from the Fast2SMS panel
-    fast2sms_whatsapp_code_template: str = ""  # id of an approved template with one variable: the code
-    fast2sms_whatsapp_reminder_template: str = ""  # id of an approved template with two variables: the case, then when
+    # WhatsApp through Fast2SMS (WHATSAPP_PROVIDER=fast2sms; the API key above is used). The ids come from its panel.
+    fast2sms_whatsapp_phone_number_id: str = ""  # your connected WhatsApp number's id
+    fast2sms_whatsapp_template_code: str = ""  # ids of the approved templates (one variable: the code)
+    fast2sms_whatsapp_template_reminder: str = ""  # (two variables: the case, then when)
+    fast2sms_whatsapp_template_update: str = ""  # (one variable: the case)
+    fast2sms_whatsapp_template_activity: str = ""  # (one variable: the case)
+    fast2sms_webhook_secret: str = ""  # the fixed secret its webhooks send in the "webhook_secret_key" header
     fast2sms_otp_route: bool = False  # true only after Fast2SMS "website verification"; otherwise codes use Quick SMS
     sms_country_code: str = "91"
-    whatsapp_phone_number_id: str = ""
     answer_model: str = "claude-sonnet-5-5"
     upload_dir: str = "uploads"
     max_upload_bytes: int = 15 * 1024 * 1024

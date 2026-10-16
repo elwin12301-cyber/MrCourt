@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session, selectinload
 from mrcourt.db.base import get_sessionmaker, utcnow
 from mrcourt.models import Case, CaseInvitation, Hearing, ReminderLog, User
 from mrcourt.services.cases import aware
-from mrcourt.services.notify import Message, get_notifier
+from mrcourt.services.whatsapp import outbox
 
 import logging
 
@@ -68,14 +68,9 @@ def _recipients(db: Session, case: Case) -> list[User]:
     return people
 
 
-def _eligible(user: User) -> bool:
-    settings = user.settings
-    return (
-        user.status == "active"
-        and bool(user.phone)
-        and user.phone_verified_at is not None
-        and (settings is None or settings.whatsapp_reminders)  # the "text message reminders" switch
-    )
+def _eligible(db: Session, user: User) -> bool:
+    """A reminder can reach this person: by WhatsApp if they opted in, or by text if they keep text reminders on."""
+    return outbox.eligible_for_reminders(db, user)
 
 
 def send_due_reminders(db: Session, now: datetime | None = None) -> int:
@@ -87,13 +82,12 @@ def send_due_reminders(db: Session, now: datetime | None = None) -> int:
         upcoming = [h for h in case.hearings if aware(h.scheduled_at) > now]
         if not upcoming:
             continue
-        recipients = [u for u in _recipients(db, case) if _eligible(u)]
+        recipients = [u for u in _recipients(db, case) if _eligible(db, u)]
         for hearing in upcoming:
             when = aware(hearing.scheduled_at)
             due = due_offsets(when, now)
             if not due:
                 continue
-            text = f"Announcement from MrCourt: your hearing in {case.title} is {when_text(when, now)}."
             for user in recipients:
                 done = set(
                     db.scalars(
@@ -106,17 +100,12 @@ def send_due_reminders(db: Session, now: datetime | None = None) -> int:
                 if not pending:
                     continue
                 try:
-                    get_notifier().send(
-                        Message(
-                            contact=user.phone or "",
-                            text=text,
-                            kind="reminder",
-                            variables={"case": case.title, "when": when_text(when, now)},
-                        )
-                    )
-                except Exception:  # noqa: BLE001 - one failed text must not stop the rest; it is tried again next run
+                    handed_over = outbox.send_reminder(db, user, case, hearing, when, now)
+                except Exception:  # noqa: BLE001 - one failed message must not stop the rest; it is tried again next run
                     logger.warning("A reminder could not be sent; it will be tried again", exc_info=True)
                     continue
+                if not handed_over:
+                    continue  # no provider took it (an outage): tried again next run
                 for offset in pending:
                     db.add(ReminderLog(hearing_id=hearing.id, user_id=user.id, offset_days=offset, sent_at=now))
                 db.flush()

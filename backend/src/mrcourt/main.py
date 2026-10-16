@@ -45,7 +45,7 @@ def _reminder_loop(minutes: int, stop: threading.Event) -> None:
         try:
             count = send_due_reminders(session)
             session.commit()
-            logger.info("Reminder run sent %d text(s)", count)
+            logger.info("Reminder run sent %d message(s)", count)
         except Exception:  # noqa: BLE001 - a failed run is tried again next time
             session.rollback()
             logger.warning("Reminder run failed", exc_info=True)
@@ -60,6 +60,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
     stop = threading.Event()
     if minutes > 0:
         threading.Thread(target=_reminder_loop, args=(minutes, stop), daemon=True, name="reminders").start()
+        from mrcourt.services.whatsapp import jobs as whatsapp_jobs  # nudges and retries need a shorter beat
+
+        threading.Thread(target=whatsapp_jobs.flush_loop, args=(stop,), daemon=True, name="whatsapp").start()
     yield
     stop.set()
 
@@ -99,6 +102,7 @@ def _routers() -> list[APIRouter]:
         "history",
         "speech",
         "text",
+        "whatsapp",
         "dev",
     ):
         try:

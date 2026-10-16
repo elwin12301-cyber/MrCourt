@@ -12,6 +12,8 @@ export interface HistoryItem {
   input_method: InputMethod;
   mode: 'answer' | 'assistant' | 'text';
   outcome_label: OutcomeLabel;
+  /** How it was asked; WhatsApp questions are marked in the list. */
+  channel?: 'app' | 'whatsapp';
 }
 
 export interface HistoryPage {

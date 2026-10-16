@@ -16,7 +16,7 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 
 from pgvector.sqlalchemy import Vector
-from sqlalchemy import ColumnElement, and_, or_, select, text, type_coerce
+from sqlalchemy import ColumnElement, and_, or_, select, text, true, type_coerce
 from sqlalchemy.orm import Session
 
 from mrcourt.config import get_settings
@@ -97,6 +97,8 @@ def visible_to(user: User | None) -> ColumnElement[bool]:
     owner_ok = LegalSource.owner_id.is_(None)
     if user is not None:
         owner_ok = or_(owner_ok, LegalSource.owner_id == user.id)
+        if user.role == "admin":  # administrators may search every document, advocates' private ones too
+            owner_ok = true()
     ready = or_(
         LegalSource.document_id.is_(None),
         LegalSource.document_id.in_(

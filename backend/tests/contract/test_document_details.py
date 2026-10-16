@@ -61,11 +61,10 @@ def test_clients_and_other_advocates_never_see_private_details(advocate_client, 
 def test_administrators_see_private_documents_and_every_view_is_audited(admin_client, db):
     doc = _private_judgment(db)
     row = next(d for d in admin_client.get(f"{API}/documents").json() if d["id"] == str(doc.id))
-    assert row["scope"] == "private" and row["owner"] == "rohan" and row["can_remove"] is False
+    assert row["scope"] == "private" and row["owner"] == "rohan" and row["can_remove"] is True
     body = admin_client.get(f"{API}/documents/{doc.id}/details").json()
     assert body["fields"]["court"]["value"] == "Madras High Court"
-    assert body["can_edit"] is False  # seeing is not correcting: only the owner corrects
-    assert admin_client.patch(f"{API}/documents/{doc.id}/details", json={"fields": {"court": "X"}}).status_code == 403
+    assert body["can_edit"] is True
     passage = db.scalar(select(LegalSource).where(LegalSource.document_id == doc.id))
     read = admin_client.get(f"{API}/passages/{passage.id}")
     assert read.status_code == 200 and read.json()["scope"] == "private"
@@ -73,6 +72,66 @@ def test_administrators_see_private_documents_and_every_view_is_audited(admin_cl
     assert {"knowledge.private.list", "knowledge.private.details", "knowledge.private.passage"} <= set(actions)
     entries = db.scalars(select(AuditEntry).where(AuditEntry.action.like("knowledge.private.%"))).all()
     assert "Velan" not in json.dumps([e.detail for e in entries])  # who and which, never content
+
+
+def test_an_administrator_can_correct_a_private_document_and_it_is_audited_without_the_content(admin_client, db):
+    doc = _private_judgment(db)
+    response = admin_client.patch(f"{API}/documents/{doc.id}/details", json={"fields": {"court": "Madurai Bench of Madras High Court"}})
+    assert response.status_code == 200 and response.json()["fields"]["court"]["confidence"] == "confirmed"
+    db.expire_all()
+    (entry,) = db.scalars(select(AuditEntry).where(AuditEntry.action == "knowledge.private.edit"))
+    assert entry.detail == {"fields": ["court"]} and "Madurai" not in json.dumps(entry.detail)
+
+
+def test_an_administrator_can_search_private_documents_in_their_own_questions(admin_client, db):
+    make_document(db, title="Rohan note", citation="Rohan note", kind="note", owner=_user(db, "rohan.sharma@example.com"),
+                  passages=["Zanzibar clause: the zanzibar limitation is eleven months."])
+    db.commit()
+    body = admin_client.post("/api/v1/questions", json={"text": "What is the zanzibar limitation clause?"}).json()
+    assert body["outcome"] == "cited" and body["citations"][0]["label"].startswith("Rohan note")
+
+
+def test_other_advocates_and_clients_still_cannot_search_someone_elses_private_documents(client, second_client, db):
+    owner = _user(db, "rohan.sharma@example.com")
+    make_document(db, title="Rohan note", citation="Rohan note", kind="note", owner=owner,
+                  passages=["Zanzibar clause: the zanzibar limitation is eleven months."])
+    db.commit()
+    other = User(role="advocate", full_name="Other Advocate", email="other.advocate@example.com", username="otheradv", password_hash="x")
+    db.add(other)
+    db.commit()
+    from mrcourt.services.session import hash_password
+
+    other.password_hash = hash_password("password123")
+    db.commit()
+    for who, test_client in (("other.advocate@example.com", client), ("anita.sharma@example.com", second_client)):
+        sign_in(test_client, who)
+        assert test_client.post("/api/v1/questions", json={"text": "What is the zanzibar limitation clause?"}).json()["outcome"] == "no_reliable_source"
+
+
+def test_an_administrator_can_remove_a_private_document_and_it_is_audited_without_its_title(admin_client, db):
+    doc = _private_judgment(db)
+    doc_id, title = doc.id, doc.title
+    assert admin_client.delete(f"{API}/documents/{doc_id}").status_code == 204
+    db.expire_all()
+    assert db.get(KnowledgeDocument, doc_id) is None and db.scalars(select(LegalSource).where(LegalSource.document_id == doc_id)).all() == []
+    (entry,) = db.scalars(select(AuditEntry).where(AuditEntry.action == "knowledge.private.remove"))
+    assert entry.target_id == doc_id and entry.detail == {} and title not in json.dumps(entry.detail)
+
+
+def test_other_advocates_cannot_remove_or_correct_someone_elses_private_document(client, db):
+    doc = _private_judgment(db)
+    other = User(role="advocate", full_name="Other Advocate", email="other.advocate@example.com", username="otheradv")
+    db.add(other)
+    db.commit()
+    from mrcourt.services.session import hash_password
+
+    other.password_hash = hash_password("password123")
+    db.commit()
+    sign_in(client, "other.advocate@example.com")
+    assert client.delete(f"{API}/documents/{doc.id}").status_code == 404
+    assert client.patch(f"{API}/documents/{doc.id}/details", json={"fields": {"court": "X"}}).status_code == 404
+    db.expire_all()
+    assert db.get(KnowledgeDocument, doc.id) is not None
 
 
 def test_a_correction_is_kept_when_mapped_again(advocate_client, db):
@@ -112,9 +171,11 @@ def test_remap_scope(advocate_client, admin_client, db):
     private.details = None
     db.commit()
     summary = admin_client.post(f"{API}/documents/remap").json()
-    assert summary["documents"] >= 1
+    assert summary["documents"] >= 2  # the administrator maps every document, private ones too
     db.expire_all()
-    assert db.get(KnowledgeDocument, private.id).details is None  # the administrator never maps private documents
+    assert db.get(KnowledgeDocument, private.id).details is not None
+    (entry,) = db.scalars(select(AuditEntry).where(AuditEntry.action == "knowledge.private.remap"))
+    assert entry.detail["documents"] >= 2
     assert advocate_client.post(f"{API}/documents/remap").json()["fields_found"]["court"] == 1
     sign_in(advocate_client, "anita.sharma@example.com")  # now the client, in the same browser
     assert advocate_client.post(f"{API}/documents/remap").status_code == 403

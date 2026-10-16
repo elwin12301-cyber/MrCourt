@@ -1,0 +1,1 @@
+From=whatsapp%3A%2B{FROM}&To=whatsapp%3A%2B14155238886&Body={TEXT}&MessageSid={ID}&NumMedia=0

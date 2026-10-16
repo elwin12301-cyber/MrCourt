@@ -73,10 +73,10 @@ test('an advocate’s private note is hidden from clients and not used for them;
 
     await admin.page.goto('/ask/knowledge');
     await expect(admin.page.getByRole('heading', { name: 'Knowledge Assistant', level: 1 })).toBeVisible();
-    // Administrators see advocates' private documents (each view is recorded), but cannot remove them.
+    // Administrators see advocates' private documents (each view is recorded) and may remove them (also recorded).
     const adminRow = admin.page.locator('tbody tr', { hasText: `Mine ${id}` });
     await expect(adminRow).toContainText('Private ·');
-    await expect(adminRow.getByRole('button', { name: /Remove/ })).toHaveCount(0);
+    await expect(adminRow.getByRole('button', { name: /Remove/ })).toBeVisible();
   } finally {
     await admin.close();
     await s.close();

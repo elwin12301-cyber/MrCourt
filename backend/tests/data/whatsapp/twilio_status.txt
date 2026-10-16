@@ -1,0 +1,1 @@
+MessageSid={ID}&MessageStatus={STATUS}&To=whatsapp%3A%2B{FROM}&ErrorCode={ERROR}

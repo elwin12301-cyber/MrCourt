@@ -18,6 +18,7 @@ class HistoryItem(BaseModel):
     input_method: Literal["typed", "voice"]
     mode: Literal["answer", "assistant", "text"]
     outcome_label: OutcomeLabel
+    channel: Literal["app", "whatsapp"] = "app"  # how it was asked (feature 010)
 
 
 class WorkspaceItem(HistoryItem):

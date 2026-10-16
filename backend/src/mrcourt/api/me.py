@@ -6,7 +6,9 @@ from sqlalchemy import select
 from mrcourt.api.deps import CurrentUser, DbSession
 from mrcourt.models import User
 from mrcourt.schemas.auth import DeactivateRequest, MeOut, MePatch, SettingsOut, SettingsPatch
+from mrcourt.schemas.whatsapp import ConsentIn, WhatsAppSettingsOut
 from mrcourt.services import privacy
+from mrcourt.services.whatsapp import consent as whatsapp_consent
 from mrcourt.services.session import SESSION_COOKIE
 
 router = APIRouter(prefix="/me", tags=["me"])
@@ -31,6 +33,7 @@ def patch_me(data: MePatch, user: CurrentUser, db: DbSession) -> MeOut:
             raise HTTPException(status.HTTP_409_CONFLICT, "That phone number is already in use")
         if phone != user.phone:
             user.phone_verified_at = None  # a new number has to be checked again
+            whatsapp_consent.unlink(db, user, changed_by="system")  # and linked and agreed to again
         user.phone = phone
     if data.bar_registration_number is not None and user.role == "advocate":
         number = data.bar_registration_number.strip() or None
@@ -51,6 +54,48 @@ def patch_settings(data: SettingsPatch, user: CurrentUser, db: DbSession) -> Set
             setattr(user.settings, field, value)
     db.commit()
     return SettingsOut.model_validate(user.settings)
+
+
+def _whatsapp(db: DbSession, user: User) -> WhatsAppSettingsOut:
+    return WhatsAppSettingsOut(**whatsapp_consent.view(db, user))  # type: ignore[arg-type]
+
+
+@router.get("/whatsapp", response_model=WhatsAppSettingsOut)
+def get_whatsapp(user: CurrentUser, db: DbSession) -> WhatsAppSettingsOut:
+    return _whatsapp(db, user)
+
+
+@router.post("/whatsapp/link", response_model=WhatsAppSettingsOut)
+def link_whatsapp(user: CurrentUser, db: DbSession) -> WhatsAppSettingsOut:
+    whatsapp_consent.link(db, user)
+    db.commit()
+    return _whatsapp(db, user)
+
+
+@router.delete("/whatsapp", status_code=status.HTTP_204_NO_CONTENT)
+def unlink_whatsapp(user: CurrentUser, db: DbSession) -> Response:
+    whatsapp_consent.unlink(db, user)
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.put("/whatsapp/consents/{kind}", response_model=WhatsAppSettingsOut)
+def set_whatsapp_consent(kind: str, data: ConsentIn, user: CurrentUser, db: DbSession) -> WhatsAppSettingsOut:
+    whatsapp_consent.set_consent(db, user, kind, data.enabled)
+    db.commit()
+    return _whatsapp(db, user)
+
+
+@router.delete("/whatsapp/history", status_code=status.HTTP_204_NO_CONTENT)
+def delete_whatsapp_history(user: CurrentUser, db: DbSession) -> Response:
+    """Deletes the person's WhatsApp delivery records held by MrCourt."""
+    from sqlalchemy import delete
+
+    from mrcourt.models import Message
+
+    db.execute(delete(Message).where(Message.user_id == user.id))
+    db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/data-export")

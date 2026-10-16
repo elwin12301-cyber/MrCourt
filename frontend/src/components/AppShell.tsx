@@ -33,6 +33,7 @@ const ADMIN_NAV: NavItem[] = [
   { to: '/admin/cases', label: 'Cases', icon: 'file' },
   { to: '/admin/verifications', label: 'Verifications', icon: 'check' },
   { to: '/ask', label: 'Ask MrCourt', icon: 'chat' },
+  { to: '/admin/messages', label: 'Messages', icon: 'chat' },
   { to: '/admin/audit', label: 'Audit log', icon: 'shield' },
   { to: '/settings', label: 'Settings', icon: 'cal' },
 ];

@@ -1,13 +1,10 @@
 from fastapi import APIRouter
 
-from mrcourt.services import metadata
 from mrcourt.api.deps import CurrentUser, DbSession
-from mrcourt.models import Answer, AnswerCitation, Question
 from mrcourt.schemas.questions import AnswerOut, CitationOut, ParagraphOut, QuestionIn
-from mrcourt.services import ratelimit
+from mrcourt.services import ask as asking
+from mrcourt.services import metadata, ratelimit
 from mrcourt.services.access import get_visible_case
-from mrcourt.services.advice_guard import CASE_SPECIFIC_NOTICE, LAWYER_REMINDER, looks_case_specific
-from mrcourt.services.answering import answer_question
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
@@ -18,41 +15,23 @@ def ask(data: QuestionIn, user: CurrentUser, db: DbSession) -> AnswerOut:
     if data.case_id is not None:
         get_visible_case(db, user, data.case_id)  # 404 if the user cannot see that case
 
-    result = answer_question(db, data.text, user, data.filters.model_dump() if data.filters else None)
-
-    question = Question(
-        user_id=user.id, case_id=data.case_id, text=data.text, input_method=data.input_method
+    asked = asking.ask(
+        db,
+        user,
+        data.text,
+        filters=data.filters.model_dump() if data.filters else None,
+        case_id=data.case_id,
+        input_method=data.input_method,
     )
-    answer = Answer(
-        outcome=result.outcome,
-        paragraphs=[
-            {"text": p.text, "citation_numbers": p.citation_numbers} for p in result.paragraphs
-        ],
-        disclaimer=result.disclaimer,
-        answer_mode=result.answer_mode,
-        ranking=result.ranking,
-    )
-    question.answer = answer
-    for number, source in enumerate(result.citations, start=1):
-        answer.citations.append(
-            AnswerCitation(
-                source_id=source.id,
-                position=number,
-                label=source.citation_label,
-                source_url=source.source_url,
-            )
-        )
-    db.add(question)
     db.commit()
-
-    is_client = user.role == "petitioner"
+    result = asked.result
     return AnswerOut(
-        question_id=question.id,
+        question_id=asked.question.id,
         answer_mode=result.answer_mode,  # type: ignore[arg-type]
         search_mode=result.search_mode,  # type: ignore[arg-type]
         source_language_note=result.source_note,
         outcome=result.outcome,  # type: ignore[arg-type]
-        paragraphs=[ParagraphOut(**p) for p in answer.paragraphs],
+        paragraphs=[ParagraphOut(**p) for p in asked.answer.paragraphs],
         citations=[
             CitationOut(
                 number=i,
@@ -65,7 +44,6 @@ def ask(data: QuestionIn, user: CurrentUser, db: DbSession) -> AnswerOut:
         ],
         message=result.message,
         disclaimer=result.disclaimer,
-        # Clients get general information only, and are pointed to their lawyer for their own case.
-        case_specific_notice=CASE_SPECIFIC_NOTICE if is_client and looks_case_specific(data.text) else None,
-        lawyer_reminder=LAWYER_REMINDER if is_client else None,
+        case_specific_notice=asked.case_specific_notice,
+        lawyer_reminder=asked.lawyer_reminder,
     )

@@ -97,8 +97,12 @@ Copy `.env.example` to `.env`. Names only are listed there; never commit values.
 | `OCR_LANGUAGES` | Tesseract language packs for scans, joined with `+` (default `eng+tam`) |
 | `KNOWLEDGE_DIR` | Where uploaded knowledge files are stored (default `knowledge/`, not committed) |
 | `MAX_KNOWLEDGE_BYTES`, `ASSISTANT_MAX_STEPS` | Upload size limit (10 MB) and the most steps the assistant takes per request (6) |
-| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM`, `TWILIO_WHATSAPP_FROM` | Text messages (SMS and WhatsApp) for codes and reminders; empty means the development outbox |
-| `WHATSAPP_PROVIDER_API_KEY`, `WHATSAPP_PHONE_NUMBER_ID` | WhatsApp Cloud API (older option, used only when Twilio is not set) |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_SMS_FROM` | Text messages (SMS) for codes and reminders, and the fallback when WhatsApp fails; empty means the development outbox |
+| `WHATSAPP_PROVIDER` | The WhatsApp channel: `none` (default), `fast2sms`, `twilio` (free sandbox, with `TWILIO_WHATSAPP_FROM`) or `meta`. See "WhatsApp channel" below |
+| `FAST2SMS_WHATSAPP_PHONE_NUMBER_ID`, `FAST2SMS_WHATSAPP_TEMPLATE_CODE`, `_REMINDER`, `_UPDATE`, `_ACTIVITY`, `FAST2SMS_WEBHOOK_SECRET` | WhatsApp through Fast2SMS (uses `FAST2SMS_API_KEY`): the connected number's id, the ids of the four approved templates, and the fixed secret its webhooks send |
+| `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` | Meta's WhatsApp Business details: the number's id, the access token, the secret that signs its calls, and the token you type when setting up the webhook |
+| `WHATSAPP_TEMPLATE_CODE`, `_REMINDER`, `_UPDATE`, `_ACTIVITY` | Names of the approved message templates (defaults `mrcourt_code`, `mrcourt_hearing_reminder`, `mrcourt_case_update`, `mrcourt_activity`) |
+| `PUBLIC_APP_URL`, `WHATSAPP_WEBHOOK_URL`, `WHATSAPP_DAILY_SEND_CAP` | The site's public address (used in "read more" links), the exact address the provider calls (Twilio signs it; default is the public address plus `/api/v1/whatsapp/webhook`), and the most WhatsApp template messages sent per day (default 500) |
 
 Send due reminders on a schedule with `python -m mrcourt.services.reminders`.
 
@@ -300,21 +304,100 @@ found: the Evidence Act, the Limitation Act and the Sale of Goods Act; download 
 TWILIO_ACCOUNT_SID=AC...
 TWILIO_AUTH_TOKEN=...
 TWILIO_SMS_FROM=+1...                       # your Twilio trial phone number (leave empty to turn SMS off)
-TWILIO_WHATSAPP_FROM=whatsapp:+14155238886  # the sandbox number shown in the console (empty turns WhatsApp off)
+TWILIO_WHATSAPP_FROM=whatsapp:+14155238886  # the sandbox number: used by the WhatsApp channel (see below)
 ```
 
-- **WhatsApp sandbox:** in the Twilio console open Messaging, then Try it out, then Send a WhatsApp message. Each person
-  who should receive messages sends the shown "join ..." phrase to the sandbox number from their own WhatsApp.
+- **WhatsApp sandbox:** see "WhatsApp channel" below. Each person who should receive messages sends the sandbox's
+  "join ..." phrase from their own WhatsApp first.
 - **SMS trial:** a trial account texts only numbers you have verified under Verified Caller IDs, and adds a trial note
   to each message.
 - **Fast2SMS (India):** set `FAST2SMS_API_KEY` in `backend/.env`. Codes go by its OTP route and reminders by its Quick SMS
   route; the account needs wallet balance. Not tested against the live service. Twilio is used first if both are set.
-- **Fast2SMS WhatsApp:** also set `FAST2SMS_WHATSAPP_PHONE_NUMBER_ID`, `FAST2SMS_WHATSAPP_CODE_TEMPLATE` (one variable: the
-  code) and `FAST2SMS_WHATSAPP_REMINDER_TEMPLATE` (two variables: the case, then when). Templates must be approved in the
-  Fast2SMS panel. Each message then goes by SMS and by WhatsApp. Not tested against the live service.
-- Each message goes on every channel that is set up. These free accounts are for testing; sending to real clients at
-  scale needs a paid, registered account (in India, sender and template registration applies).
-- The Twilio sender has been tested only against a stand-in, not the live service.
+- Text messages go out by the first SMS sender that is set up (Twilio, then Fast2SMS). WhatsApp is separate. These free
+  accounts are for testing; sending to real clients at scale needs a paid, registered account (in India, sender and
+  template registration applies).
+- The Twilio and Fast2SMS senders have been tested only against stand-ins, not the live services.
+
+## WhatsApp channel
+
+A consent-based, two-way channel (feature 010). It is off until a provider is set up (`WHATSAPP_PROVIDER`); with `none`
+everything stays on the development outbox and by SMS.
+
+**What people get.** In **Settings -> WhatsApp** a person links their verified mobile number and switches on, one by one,
+what they want: sign-in and verification codes, hearing reminders (5 days before, 1 day before, on the day), and for
+clients a short note when their advocate posts an update (advocates can get a note when a client writes). **Everything is
+off until switched on.** These messages name only the case and the time, or say there is news; the detail stays in the
+app. If WhatsApp fails or the number is not on WhatsApp, the same short words go once by text message (when the person
+keeps "text message reminders" on).
+
+**What people can ask.** A linked person can message the MrCourt WhatsApp number:
+
+- a legal question, answered like Ask MrCourt (cited, with the disclaimer, in short form with the sources named and a
+  link to History). Only shared sources are used: an advocate's private documents are never quoted on WhatsApp;
+- `next hearing`, `status`, `today`, `help` (also in Hindi and Tamil). A client sees only cases they were invited to and
+  only what the advocate shared; an advocate sees their own cases;
+- a voice note (understood in the language chosen in Settings, quoted back as "I heard: ...");
+- `STOP` (also in Hindi and Tamil) to switch every kind off at once.
+
+A message from a number that is not linked gets one fixed "how to link" reply (at most twice a day) and nothing about any
+account. Messages per number are limited (`WHATSAPP_QUESTIONS_PER_MINUTE` 3, `_PER_DAY` 40).
+
+**What is stored.** Delivery records (kind, status, time, person; never the words) for 90 days; the question text only in
+the person's own History (marked "Asked on WhatsApp"); no audio. Administrators open **Messages** to see counts, failures
+(who and why, never the words or the number) and whether the service works. Deactivating an account removes the link, the
+choices and the records. The purge and retries run in the in-app loop (`REMINDER_INTERVAL_MINUTES` above 0) or with
+`python -m mrcourt.services.whatsapp.jobs` every minute from a scheduler.
+
+**Try it without any account:**
+
+```
+python backend/scripts/whatsapp_dev_send.py --from 9000000005 --text "What is Section 138 of the NI Act?"
+```
+
+(link the number in Settings first; the reply is printed from the development outbox).
+
+**Free test with the Twilio sandbox.** Put `WHATSAPP_PROVIDER=twilio` and the Twilio keys above in `backend/.env`. Expose
+the backend on a public HTTPS address (any tunnel tool) and set the sandbox's "When a message comes in" and "Status callback"
+to `https://<address>/api/v1/whatsapp/webhook`, with `WHATSAPP_WEBHOOK_URL` set to exactly that address (Twilio signs it).
+Each tester sends the sandbox's `join ...` phrase first (it lapses after a few days).
+
+**Production with Fast2SMS (India).** Fast2SMS connects your WhatsApp Business number and sends and receives for you. In its
+panel: connect the number and note its **phone number id**; create the four templates (texts in
+`specs/010-whatsapp-channel/contracts/whatsapp-api.md`), wait for approval and note each **template id**. Put these in
+`backend/.env` (or the host's secret store; never commit them):
+
+```
+WHATSAPP_PROVIDER=fast2sms
+FAST2SMS_API_KEY=...                        # the key you already use for text messages
+FAST2SMS_WHATSAPP_PHONE_NUMBER_ID=...      # optional for sending templates, needed for replies to questions
+FAST2SMS_WHATSAPP_TEMPLATE_CODE=...         # one variable: the code
+FAST2SMS_WHATSAPP_TEMPLATE_REMINDER=...     # two variables: the case, then when
+FAST2SMS_WHATSAPP_TEMPLATE_UPDATE=...       # one variable: the case
+FAST2SMS_WHATSAPP_TEMPLATE_ACTIVITY=...     # one variable: the case
+FAST2SMS_WEBHOOK_SECRET=...                 # the 40-character secret from the panel's webhook settings
+```
+
+Then in Fast2SMS **Webhooks -> WhatsApp -> Add webhook** (twice, or once with the event "All"), method POST, URL
+`https://<your site>/api/v1/whatsapp/webhook`, and turn on webhook signing so each call carries your secret. Payloads:
+
+```
+{"webhook_type":"incoming_message","from":"{{from}}","message_id":"{{message_id}}","message_type":"{{message_type}}","body":"{{body}}","media_url":"{{media_url}}","mime_type":"{{mime_type}}"}
+{"webhook_type":"status_update","status":"{{status}}","message_id":"{{message_id}}","recipient_id":"{{recipient_id}}","error_message":"{{error_message}}"}
+```
+
+If the panel offers form encoding, prefer it (a message containing a double quote could otherwise break the JSON):
+`webhook_type=incoming_message&from={{from}}&message_id={{message_id}}&message_type={{message_type}}&body={{body}}&media_url={{media_url}}&mime_type={{mime_type}}`.
+**Their webhook secret is a fixed value, not a signature**: anyone who learns it can forge a call, so keep it out of logs and
+chats and change it if it leaks. **Not yet tested against the live service**: the first live test must confirm that the
+template ids and number id work, that status reports match our messages (the app falls back to matching by recipient when a
+report's id differs), that text with quotes arrives intact, and whether voice-note media addresses are fetchable.
+
+**Production with Meta's WhatsApp Business.** You need a verified business account, a registered number and four approved
+message templates (names above; texts in `specs/010-whatsapp-channel/contracts/whatsapp-api.md`). Set `WHATSAPP_PROVIDER=meta`,
+`WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` and `WHATSAPP_VERIFY_TOKEN`; in Meta's dashboard
+set the webhook to `https://<your site>/api/v1/whatsapp/webhook` with that verify token. Keys go only in `backend/.env` or the
+host's secret store. WhatsApp charges for template messages and its prices and free allowances change: check them first.
+Test steps: `specs/010-whatsapp-channel/quickstart.md`. **Roll back** with `WHATSAPP_PROVIDER=none`.
 
 ## Deploying on Render
 
@@ -413,19 +496,24 @@ python scripts/evaluate_ranking.py --questions tests/data/ranking_eval_shared.js
   [quality-results.md](specs/005-complete-rag/quality-results.md) for what it achieved on the reference questions.
 - **The model-written answer path (`ANTHROPIC_API_KEY`) is untested against the live API.** The
   verifier that guards it is tested with fake generators.
-- **The WhatsApp adapter is untested** and WhatsApp only delivers pre-approved templates outside a
-  24-hour window, so it needs a registered template before it will deliver.
-- **Text messages are untested against a real account.** Codes and reminders go to a development outbox until Twilio keys
-  are set; the Twilio sender is tested only against a stand-in. Email is not used to deliver codes.
+- **The WhatsApp channel is untested against the live services.** The Meta and Twilio adapters, their signature checks and
+  the sending are tested with sample payloads and a fake HTTP transport only; WhatsApp delivers only approved templates
+  outside the 24-hour window, so it needs registered templates before it delivers reminders. A real WhatsApp voice note
+  (OGG) has not been sent through the speech service yet.
+- **A login code that WhatsApp reports as failed later is not re-sent by text** (the code is not kept); only an immediate
+  refusal falls back to SMS. The person asks for a new code.
+- **Text messages are untested against a real account.** Codes and reminders go to a development outbox until Twilio or
+  Fast2SMS keys are set; those senders are tested only against stand-ins. Email is not used to deliver codes.
 - **Hearing descriptions and the glossary have not been reviewed by a lawyer** (task T070 for feature 002).
   Until they are, they are off in production.
 - **The "is this about my own case?" check is keyword-based.** Unusual wording can slip past it, which is
   why every client answer also carries a reminder to ask the lawyer. It is not a substitute for review.
-- **Client updates appear inside MrCourt only.** A client who never opens the app sees nothing except the
-  existing hearing reminders (which also need the WhatsApp adapter and a phone number).
-- **Administrators can read private case content**, including advocates' private knowledge-base documents, their
-  mapped details (parties, judges, case numbers) and passages (`knowledge.private.*` audit entries). They cannot
-  correct, re-map or remove them. That is a deliberate choice, protected only by the audit
+- **Client updates appear inside MrCourt first.** A client who has not linked WhatsApp and switched on case updates sees
+  nothing outside the app except the hearing reminders; the WhatsApp note says only that there is news.
+- **Administrators have full access to private case content**, including advocates' private knowledge-base documents:
+  they can see them with their owner's name, search them in their own questions, correct their mapped details (parties,
+  judges, case numbers), map them again and **remove them for good**. Every such action is recorded (`knowledge.private.*`
+  audit entries: who and which document, never the title or content). That is a deliberate choice, protected only by the audit
   log. Review it against the DPDP Act and your organisation's policy before launch (task T032 for feature 003),
   and have someone read the audit log regularly.
 - **Question text, passage text and (with the speech option) voice go to Voyage AI and Sarvam AI.** Include these in

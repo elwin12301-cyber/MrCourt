@@ -89,7 +89,7 @@ An administrator runs mapping over all shared documents, and an advocate over al
 
 ### Session 2026-10-13
 
-- Q: May administrators see advocates' private documents? → A: Yes, read-only (decided by the product owner). Administrators see private documents in the knowledge base with the owner's name, their mapped details and passages; each view is audited (`knowledge.private.list`, `.details`, `.passage`, recording who and which document, never content). Correcting, re-mapping and removing stay with the owner. This follows the existing rule that administrators may read private case content (feature 003). Other advocates and clients still see nothing.
+- Q: May administrators see advocates' private documents? → A: Yes, with full access (decided by the product owner, first read-only on 2026-10-13, then full the same day and again on 2026-10-14). Administrators see private documents in the knowledge base with the owner's name, search them in their own questions, read their mapped details and passages, correct their details, map them again and remove them. Every such action is audited (`knowledge.private.list`, `.details`, `.passage`, `.edit`, `.remap`, `.remove`) with who and which document, never the title or content. This follows the existing rule that administrators may read private case content (feature 003). Other advocates and clients still see nothing, and cannot change someone else's documents.
 
 ## Requirements *(mandatory)*
 
@@ -104,7 +104,7 @@ An administrator runs mapping over all shared documents, and an advocate over al
 - **FR-007**: Asking a question MUST allow the same filters, and citations MUST then come only from matching passages; with no match the answer says so.
 - **FR-008**: Citations and the passage viewer MUST show the mapped details in short form, leaving out unknown fields.
 - **FR-009**: Mapping MUST run automatically for new documents and on request in bulk for existing ones, with a progress summary.
-- **FR-010**: Details of private documents MUST be visible only to their owner and to administrators (read-only; every administrator view of a private document, its details or its passages is recorded in the audit log); they MUST NOT appear in filters, lists, counts or answers for any other advocate or client, and the existing rule that clients see only shared sources MUST hold.
+- **FR-010**: Details of private documents MUST be visible only to their owner and to administrators. Administrators MAY also search, correct, map again and remove private documents; every such action and every view of a private document, its details or its passages MUST be recorded in the audit log without the title or content. Private details MUST NOT appear in filters, lists, counts or answers for any other advocate or client, and the existing rule that clients see only shared sources MUST hold.
 - **FR-011**: Sections MUST be recorded as written in the document (old or new criminal law), with the Act named.
 - **FR-012**: Corrections to shared documents MUST be recorded in the administrator audit log.
 - **FR-013**: All new screens MUST meet the project's accessibility rules in both themes at desktop and phone widths.
@@ -123,7 +123,7 @@ An administrator runs mapping over all shared documents, and an advocate over al
 - **SC-002**: At least 95% of statute passages are mapped to the right Act and section.
 - **SC-003**: Using a filter, an advocate finds a known judgment among 50+ documents in under 30 seconds.
 - **SC-004**: With a section filter, 100% of citations in tested answers belong to that section or to a case referring to it.
-- **SC-005**: No private document detail is ever returned to another advocate or a client in tests of lists, filters, counts and answers; every administrator view of one is audited.
+- **SC-005**: No private document detail is ever returned to another advocate or a client in tests of lists, filters, counts and answers, and no one but the owner and administrators can search, correct or remove a private document; every administrator action on one is audited.
 
 ## Assumptions
 

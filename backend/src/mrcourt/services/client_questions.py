@@ -58,6 +58,9 @@ def ask(db: Session, client: User, case: Case, kind: str, text: str | None) -> C
     )
     db.add(question)
     db.flush()
+    from mrcourt.services.whatsapp import outbox
+
+    outbox.queue_nudge(db, owner, "activity", case)  # tells the advocate, if they opted in, that a client wrote
     return _out(question)
 
 
@@ -110,6 +113,11 @@ def reply(db: Session, advocate: User, question: ClientQuestion, text: str) -> C
                 message=f"{case.title}: Your lawyer replied to your question."[:500],
             )
         )
+        asker = db.get(User, question.client_id)
+        if asker is not None:
+            from mrcourt.services.whatsapp import outbox
+
+            outbox.queue_nudge(db, asker, "update", case)
     db.flush()
     name = db.get(User, question.client_id).full_name  # type: ignore[union-attr]
     return ClientQuestionAdvocate(**_out(question).model_dump(), client_name=name)
