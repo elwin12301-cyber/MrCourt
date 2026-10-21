@@ -234,3 +234,40 @@ def test_audio_that_is_too_big_or_missing_is_refused(monkeypatch) -> None:
     with pytest.raises(SendError) as error:
         Fast2SmsChannel(client(lambda r: httpx.Response(200, content=b"x" * (10 * 1024 * 1024 + 1)))).fetch_audio("https://www.fast2sms.com/media/1")
     assert error.value.reason == "media_too_large"
+
+
+# ----- asking for a delivery report -------------------------------------------------------------------
+
+LIVE_REPORT = {
+    "success": True,
+    "data": [
+        {"type": "status_update", "fast2sms_request_id": "WN9FP", "request_id": "wamid.LONG", "recipient_id": 919535673788,
+         "status": "failed", "status_description": "This message was not delivered to maintain healthy ecosystem engagement. (Error: 131049)"},
+    ],
+}
+
+
+def test_a_delivery_report_can_be_asked_for_by_the_send_id(monkeypatch) -> None:
+    use_fast2sms(monkeypatch)
+    seen = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append((str(request.url), request.headers["authorization"]))
+        return httpx.Response(200, json=LIVE_REPORT)
+
+    report = Fast2SmsChannel(client(handler)).fetch_report("WN9FP")
+    assert seen == [("https://www.fast2sms.com/dev/whatsapp/WN9FP", "F2S-API-KEY")]
+    assert (report.provider_message_id, report.status, report.reason, report.recipient) == ("WN9FP", "failed", "not_delivered", "919535673788")
+
+
+@pytest.mark.parametrize("answer", [httpx.Response(404, json={}), httpx.Response(200, json={"data": []}), httpx.Response(200, json={"data": [{"status": "queued"}]}), httpx.Response(200, text="<html>")])
+def test_a_report_that_is_missing_or_unclear_gives_nothing(monkeypatch, answer) -> None:
+    use_fast2sms(monkeypatch)
+    assert Fast2SmsChannel(client(lambda r: answer)).fetch_report("WN9FP") is None
+
+
+def test_an_id_with_odd_characters_is_never_put_in_the_address(monkeypatch) -> None:
+    use_fast2sms(monkeypatch)
+    calls = []
+    channel = Fast2SmsChannel(client(lambda r: calls.append(r) or httpx.Response(200, json=LIVE_REPORT)))
+    assert channel.fetch_report("../../x?y=1") is None and channel.fetch_report("") is None and calls == []

@@ -157,6 +157,25 @@ class Fast2SmsChannel:
                 parsed.reports.append(DeliveryReport("fast2sms", message_id, state, reason, recipient=digits(str(event.get("recipient_id") or "")) or None))
         return parsed
 
+    def fetch_report(self, request_id: str) -> DeliveryReport | None:
+        """Asks Fast2SMS what became of one template message (`GET /dev/whatsapp/<id>`), for hosts where its delivery
+        webhook cannot reach us. None when it knows nothing yet or says something we do not map."""
+        if not request_id or not all(c.isalnum() or c in "-_." for c in request_id):
+            return None  # the id goes into the address, so only plain characters are used
+        try:
+            response = self._http().get(f"{TEMPLATE_URL}/{request_id}", headers=self._headers())
+        except httpx.HTTPError:
+            return None
+        events = _json(response).get("data")
+        if response.status_code >= 400 or not isinstance(events, list) or not events or not isinstance(events[-1], dict):
+            return None
+        event = events[-1]
+        state = STATUS_WORDS.get(str(event.get("status", "")).lower())
+        if state is None:
+            return None
+        reason = reason_for(event.get("status_description")) if state == "failed" else None
+        return DeliveryReport("fast2sms", request_id, state, reason, recipient=digits(str(event.get("recipient_id") or event.get("mobile") or "")) or None)
+
     def fetch_audio(self, media_ref: str) -> tuple[bytes, str]:
         host = (urlparse(media_ref).hostname or "").lower()
         if not media_ref.startswith("https://") or not (host == "fast2sms.com" or host.endswith(".fast2sms.com")):

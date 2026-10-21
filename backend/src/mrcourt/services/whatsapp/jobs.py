@@ -67,7 +67,50 @@ def flush(db: Session, now: datetime | None = None) -> dict[str, int]:
 
     counts = retry_unfinished(db, now)
     counts["nudges"] = outbox.flush_due(db, now)
+    counts["polled"] = poll_delivery(db, now)
     return counts
+
+
+POLL_AFTER = timedelta(seconds=20)
+POLL_UNTIL = timedelta(days=2)
+POLL_BATCH = 50
+
+
+def poll_delivery(db: Session, now: datetime | None = None) -> int:
+    """Asks Fast2SMS about template messages still "queued" or "sent" (it can reach us by webhook only on a public
+    address). Reports apply the same way as webhook ones: the status only moves forward and a failure starts the SMS
+    fallback. Returns how many messages were checked."""
+    from mrcourt.services.whatsapp import outbox
+    from mrcourt.services.whatsapp.channel import get_channel, provider_name
+
+    if provider_name() != "fast2sms":
+        return 0
+    channel = get_channel()
+    fetch = getattr(channel, "fetch_report", None)
+    if fetch is None:
+        return 0
+    now = now or utcnow()
+    rows = list(
+        db.scalars(
+            select(Message)
+            .where(
+                Message.channel == "whatsapp", Message.provider == "fast2sms", Message.status.in_(("queued", "sent")),
+                Message.provider_message_id.is_not(None), Message.created_at < now - POLL_AFTER, Message.created_at > now - POLL_UNTIL,
+            )
+            .order_by(Message.created_at)
+            .limit(POLL_BATCH)
+        )
+    )
+    checked = 0
+    for row in rows:
+        if not row.provider_message_id or row.provider_message_id.startswith(("session-", "f2s-")):
+            continue  # replies and ids we made up have nothing to look up
+        report = fetch(row.provider_message_id)
+        checked += 1
+        if report is not None:
+            with db.begin_nested():
+                outbox.apply_report(db, report)
+    return checked
 
 
 def run_once(db: Session, now: datetime | None = None) -> dict[str, int]:

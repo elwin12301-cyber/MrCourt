@@ -120,17 +120,23 @@ def test_when_whatsapp_refuses_at_once_one_sms_with_the_same_words_goes_instead(
     assert send_due_reminders(db, now=at(15, 10)) == 0  # handled: not sent a third time
 
 
-def test_when_whatsapp_reports_failure_later_the_sms_goes_once(client, db, world, fake_channel) -> None:
+def test_when_whatsapp_reports_failure_later_the_sms_goes_once(client, db, world, fake_channel, monkeypatch) -> None:
+    from mrcourt.services.whatsapp import outbox
+
     people, _, _ = world
     opt_in(db, people[CLIENT], "reminders")
     send_due_reminders(db, now=at(15, 9))
     (sent,) = rows(db, user_id=people[CLIENT].id)
+    # The report arrives later; the hearing (20 Oct) must still be ahead of "now" or no reminder is rebuilt.
+    real_now = outbox.utcnow
+    monkeypatch.setattr(outbox, "utcnow", lambda: real_now().replace(year=2026, month=10, day=15))
     assert sent.status == "sent" and sms_to(people[CLIENT]) == []
     body = json.dumps({"report": {"id": sent.provider_message_id, "status": "failed", "reason": "not_on_whatsapp"}}).encode()
     for _ in range(2):  # the provider repeats itself
         assert client.post(WEBHOOK_PATH, content=body).status_code == 200
     assert len(sms_to(people[CLIENT])) == 1
-    first, second = rows(db, user_id=people[CLIENT].id)
+    by_channel = {row.channel: row for row in rows(db, user_id=people[CLIENT].id)}  # the pinned clock can reorder them
+    first, second = by_channel["whatsapp"], by_channel["sms"]
     assert (first.status, first.failure_reason, second.channel, second.fallback_of) == ("failed", "not_on_whatsapp", "sms", first.id)
 
 

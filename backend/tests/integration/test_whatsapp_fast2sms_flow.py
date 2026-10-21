@@ -114,3 +114,40 @@ def test_the_stored_provider_id_is_preferred_when_the_report_carries_it(client, 
     post(client, f2s_status(id="req-A", status="delivered"))
     db.expire_all()
     assert (db.get(Message, first.id).status, db.get(Message, second.id).status) == ("delivered", "sent")
+
+
+def test_polling_moves_a_sent_message_forward_and_starts_the_fallback_on_failure(db, monkeypatch) -> None:
+    from datetime import timedelta
+
+    import httpx
+    from helpers_whatsapp import linked
+
+    from mrcourt.db.base import utcnow
+    from mrcourt.models import Message
+    from mrcourt.services.whatsapp import jobs
+    from mrcourt.services.whatsapp.fast2sms import Fast2SmsChannel
+
+    use_fast2sms(monkeypatch)
+    user = linked(db, "rohan.sharma@example.com")
+    old = utcnow() - timedelta(minutes=5)
+    rows = {
+        name: Message(user_id=user.id, kind="update", channel="whatsapp", status="sent", provider="fast2sms", provider_message_id=name, created_at=old)
+        for name in ("OK1", "BAD1", "session-x")
+    }
+    db.add_all(rows.values())
+    db.commit()
+    answers = {"OK1": "delivered", "BAD1": "failed"}
+    asked = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        rid = str(request.url).rsplit("/", 1)[1]
+        asked.append(rid)
+        return httpx.Response(200, json={"data": [{"status": answers[rid], "status_description": "x (Error: 131049)", "recipient_id": 919000000001}]})
+
+    monkeypatch.setattr(Fast2SmsChannel, "_http", lambda self: httpx.Client(transport=httpx.MockTransport(handler)))
+    assert jobs.poll_delivery(db) == 2
+    db.commit()
+    db.expire_all()
+    assert sorted(asked) == ["BAD1", "OK1"]  # a reply's made-up id is never looked up
+    assert db.get(Message, rows["OK1"].id).status == "delivered"
+    assert (db.get(Message, rows["BAD1"].id).status, db.get(Message, rows["BAD1"].id).failure_reason) == ("failed", "not_delivered")
