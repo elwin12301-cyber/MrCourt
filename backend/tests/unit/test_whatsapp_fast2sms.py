@@ -170,7 +170,17 @@ def test_status_updates_become_delivery_reports_with_the_recipient(channel) -> N
     assert channel.verify_and_parse(f2s_headers(), f2s_status(status="queued"), URL).reports == []  # progress words are ignored
 
 
-@pytest.mark.parametrize("headers", [{}, {"webhook_secret_key": "wrong"}, {"webhook_secret_key": ""}, {"x-other": F2S_SECRET}])
+def test_a_live_style_report_matches_by_our_send_id_and_gives_the_held_back_reason(channel) -> None:
+    body = (
+        b'{"webhook_type":"status_update","status":"failed","fast2sms_request_id":"WN9FP","request_id":"wamid.LONG",'
+        b'"recipient_id":919535673788,"status_description":"This message was not delivered to maintain healthy ecosystem '
+        b'engagement. (Error: 131049)"}'
+    )
+    report = channel.verify_and_parse(f2s_headers(), body, URL).reports[0]
+    assert (report.provider_message_id, report.status, report.reason, report.recipient) == ("WN9FP", "failed", "not_delivered", "919535673788")
+
+
+@pytest.mark.parametrize("headers", [{},{"webhook_secret_key": "wrong"}, {"webhook_secret_key": ""}, {"x-other": F2S_SECRET}])
 def test_a_call_without_the_right_secret_is_refused(channel, headers) -> None:
     with pytest.raises(SignatureError):
         channel.verify_and_parse(headers, f2s_incoming(), URL)

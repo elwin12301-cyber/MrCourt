@@ -51,6 +51,8 @@ AUDIO_TYPES = ("audio", "voice", "ptt")
 def reason_for(text: object) -> str:
     """A short plain reason from whatever Fast2SMS says went wrong."""
     words = str(text or "").lower()
+    if "131049" in words or "healthy ecosystem" in words:
+        return "not_delivered"  # Meta held the message back (seen live for a marketing template to a new contact)
     if "template" in words:
         return "template_missing"
     if "whatsapp" in words and ("not" in words or "no " in words or "invalid" in words):
@@ -147,7 +149,8 @@ class Fast2SmsChannel:
                     parsed.messages.append(InboundMessage("fast2sms", message_id, sender, "other"))
             elif kind == "status_update":
                 state = STATUS_WORDS.get(str(event.get("status", "")).lower())
-                message_id = str(event.get("message_id") or event.get("request_id") or "")
+                # `fast2sms_request_id` is the id our send call returned; `request_id` is WhatsApp's own (wamid) one.
+                message_id = str(event.get("fast2sms_request_id") or event.get("message_id") or event.get("request_id") or "")
                 if state is None or not message_id:
                     continue
                 reason = reason_for(event.get("error_message") or event.get("status_description")) if state == "failed" else None

@@ -52,6 +52,7 @@ export const REASON_TEXT: Record<string, string> = {
   window_closed: 'Reply window closed',
   provider_down: 'WhatsApp service unavailable',
   provider_error: 'WhatsApp refused it',
+  not_delivered: 'WhatsApp held it back (marketing message to a new contact)',
   cap_reached: 'Daily limit reached',
   not_linked: 'Number no longer linked',
   not_configured: 'Not set up',
