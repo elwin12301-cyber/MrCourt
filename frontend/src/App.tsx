@@ -26,6 +26,7 @@ import Settings from './pages/Settings';
 import Updates from './pages/Updates';
 import Welcome from './pages/Welcome';
 import { useMe } from './services/auth';
+import { VoiceProvider } from './voice/VoiceProvider';
 
 /**
  * Picks the screen for the signed-in person's role: clients get their own, advocates keep theirs,
@@ -71,7 +72,7 @@ export function RequireAuth() {
 
 export default function App() {
   return (
-    <>
+    <VoiceProvider>
       <IconSprite />
       <Routes>
         <Route path="/" element={<Welcome />} />
@@ -108,6 +109,6 @@ export default function App() {
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </>
+    </VoiceProvider>
   );
 }

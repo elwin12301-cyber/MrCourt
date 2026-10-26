@@ -54,7 +54,7 @@ function InvitePetitioner({ caseId }: { caseId: string }) {
         />
       </label>
       <div>
-        <Button type="submit" small variant="ghost" disabled={invite.isPending}>
+        <Button type="submit" small variant="ghost" data-voice-risk="send" disabled={invite.isPending}>
           Send invitation
         </Button>
       </div>

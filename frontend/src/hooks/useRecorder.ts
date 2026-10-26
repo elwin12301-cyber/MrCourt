@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { concat, downsample, encodeWav } from '../services/wav';
+import { announceQuestionMic } from '../voice/coordination';
 
 export const MAX_TURN_SECONDS = 25;
 
@@ -43,8 +44,10 @@ export function useRecorder(onTurn: (wav: Blob) => void) {
       }, 250);
       setSeconds(0);
       setState('recording');
+      announceQuestionMic('start');
       stopRef.current = () => {
         stopRef.current = null;
+        announceQuestionMic('end');
         window.clearInterval(timer);
         processor.disconnect();
         source.disconnect();

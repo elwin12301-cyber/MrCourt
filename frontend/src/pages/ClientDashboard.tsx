@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ClientCaseCard } from '../components/ClientCaseCard';
 import { LawyerCard } from '../components/LawyerCard';
+import { VoicePanel } from '../components/VoicePanel';
 import { useMe } from '../services/auth';
 import { timeAgo } from '../services/cases';
 import { useClientDashboard } from '../services/client';
@@ -23,6 +24,8 @@ export default function ClientDashboard() {
         </h1>
         <p className="sub">{formatToday(now)}</p>
       </div>
+
+      <VoicePanel />
 
       <div className="stack">
         <h2>My cases</h2>

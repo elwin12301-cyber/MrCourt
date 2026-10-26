@@ -138,7 +138,8 @@ function Row({ doc }: { doc: KnowledgeDocument }) {
         {doc.can_remove &&
           (confirming ? (
             <span role="group" aria-label={`Remove ${doc.title}?`} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Button small onClick={() => remove.mutate(doc.id)} disabled={remove.isPending}>
+              {/* The second step of a removal that was already confirmed (by voice or by hand). */}
+              <Button small data-voice-risk="none" onClick={() => remove.mutate(doc.id)} disabled={remove.isPending}>
                 Yes, remove
               </Button>
               <Button small variant="ghost" onClick={() => setConfirming(false)}>
@@ -146,7 +147,14 @@ function Row({ doc }: { doc: KnowledgeDocument }) {
               </Button>
             </span>
           ) : (
-            <Button small variant="ghost" aria-label={`Remove ${doc.title}`} onClick={() => setConfirming(true)}>
+            <Button
+              small
+              variant="ghost"
+              aria-label={`Remove ${doc.title}`}
+              data-voice-risk={doc.scope === 'private' ? 'private-doc' : 'remove'}
+              data-voice-detail={doc.scope === 'private' && doc.owner ? `It belongs to ${doc.owner}` : undefined}
+              onClick={() => setConfirming(true)}
+            >
               Remove
             </Button>
           ))}

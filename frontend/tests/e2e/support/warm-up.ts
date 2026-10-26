@@ -13,6 +13,14 @@ export default async function warmUp() {
     for (const path of ['/', '/login/advocate', '/login/admin']) {
       await page.goto(`http://localhost:5174${path}`, { waitUntil: 'networkidle' });
     }
+    // The seeded people have already agreed to voice control (feature 011), so the many tests that use their
+    // accounts at the same time never race to save that agreement. Tests of the first-use notice use fresh accounts.
+    for (const email of ['rohan.sharma@example.com', 'anita.sharma@example.com', 'admin@example.com']) {
+      const context = await browser.newContext({ baseURL: 'http://localhost:8001' });
+      const login = await context.request.post('/api/v1/auth/login', { data: { identifier: email, password: 'password123' } });
+      if (login.ok()) await context.request.patch('/api/v1/me/settings', { data: { voice_consent: true } });
+      await context.close();
+    }
   } finally {
     await browser.close();
   }

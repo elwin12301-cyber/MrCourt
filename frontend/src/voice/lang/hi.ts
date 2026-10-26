@@ -1,0 +1,103 @@
+import type { LanguagePack } from '../types';
+
+/**
+ * Hindi, with the Latin-letter spellings a recogniser often writes for mixed speech ("dashboard par jao").
+ * NOT YET CHECKED by a native speaker (task T056): every phrase here is listed for review in
+ * specs/011-voice-control/results.md. A phrase that matches nothing is never acted on, so a wrong entry costs
+ * a missed command, not a wrong action.
+ */
+export const hi: LanguagePack = {
+  code: 'hi',
+  recognition: 'hi-IN',
+  label: 'Hindi',
+  actions: {
+    go: [
+      'par jao', 'पर जाओ', 'par jaiye', 'पर जाइए', 'ko jao', 'को जाओ', 'jao', 'जाओ', 'jaiye', 'जाइए',
+      'kholo', 'खोलो', 'kholiye', 'खोलिए', 'kholen', 'खोलें', 'khol do', 'खोल दो', 'dikhao', 'दिखाओ',
+    ],
+    click: ['dabao', 'दबाओ', 'dabaiye', 'दबाइए', 'click karo', 'क्लिक करो', 'click kijiye', 'क्लिक कीजिए'],
+    set_on: ['chalu karo', 'चालू करो', 'on karo', 'ऑन करो', 'shuru karo', 'शुरू करो'],
+    set_off: ['off karo', 'ऑफ करो', 'chalu mat karo', 'बंद रखो'],
+    choose: ['chuno', 'चुनो', 'select karo', 'सेलेक्ट करो'],
+    scroll_up: ['upar scroll karo', 'ऊपर स्क्रॉल करो', 'upar jao', 'ऊपर जाओ'],
+    scroll_down: ['neeche scroll karo', 'नीचे स्क्रॉल करो', 'neeche jao', 'नीचे जाओ'],
+    top: ['sabse upar', 'सबसे ऊपर', 'top par jao', 'टॉप पर जाओ'],
+    bottom: ['sabse neeche', 'सबसे नीचे', 'bottom par jao', 'बॉटम पर जाओ'],
+    next_page: ['agla page', 'अगला पेज', 'agla panna', 'अगला पन्ना'],
+    back: ['peeche jao', 'पीछे जाओ', 'wapas jao', 'वापस जाओ', 'back jao', 'बैक जाओ'],
+    forward: ['aage jao', 'आगे जाओ'],
+    refresh: ['refresh karo', 'रिफ्रेश करो', 'dobara load karo', 'दोबारा लोड करो'],
+    home: ['home jao', 'होम जाओ', 'ghar jao', 'घर जाओ'],
+    close: ['band karo', 'बंद करो', 'dialog band karo', 'डायलॉग बंद करो'],
+    cancel: ['raddh karo', 'रद्द करो', 'cancel karo', 'कैंसल करो', 'rehne do', 'रहने दो'],
+    confirm: ['haan confirm', 'हाँ confirm', 'हां कन्फर्म', 'confirm karo', 'कन्फर्म करो', 'pakka karo', 'पक्का करो'],
+    show_numbers: ['numbers dikhao', 'नंबर दिखाओ', 'number dikhao', 'नंबर दिखाइए'],
+    hide_numbers: ['numbers chhupao', 'नंबर छुपाओ', 'number chhupao', 'नंबर हटाओ'],
+    dictate: ['bolkar likho', 'बोलकर लिखो', 'dictate karo', 'डिक्टेट करो'],
+    stop_dictating: ['dictation band karo', 'डिक्टेशन बंद करो', 'likhna band karo', 'लिखना बंद करो'],
+    clear_field: ['field saaf karo', 'फील्ड साफ करो', 'clear karo', 'क्लियर करो'],
+    read_answer: ['jawab padho', 'जवाब पढ़ो', 'answer padho', 'आंसर पढ़ो'],
+    read_screen: ['screen padho', 'स्क्रीन पढ़ो', 'page padho', 'पेज पढ़ो'],
+    stop_reading: ['padhna band karo', 'पढ़ना बंद करो', 'chup raho', 'चुप रहो'],
+    help: ['main kya bol sakta hoon', 'मैं क्या बोल सकता हूँ', 'madad', 'मदद', 'help karo', 'हेल्प'],
+    stop_listening: ['sunna band karo', 'सुनना बंद करो', 'listening band karo', 'लिसनिंग बंद करो', 'voice band karo'],
+    speak: ['bhasha badlo', 'भाषा बदलो', 'bolo', 'बोलो'],
+  },
+  fillers: [
+    'ko', 'को', 'par', 'पर', 'pe', 'पे', 'mein', 'में', 'me', 'kijiye', 'कीजिए', 'karo', 'करो', 'kar', 'कर', 'na', 'ना',
+    'zara', 'ज़रा', 'jara', 'ka', 'का', 'ki', 'की', 'ek', 'एक', 'wala', 'वाला', 'wali', 'वाली', 'please', 'plz', 'aur', 'और',
+  ],
+  generic: ['tab', 'टैब', 'button', 'बटन', 'link', 'लिंक', 'menu', 'मेन्यू', 'page', 'पेज', 'section', 'सेक्शन', 'option', 'ऑप्शन'],
+  connectors: ['aur', 'और', 'phir', 'फिर', 'uske baad', 'उसके बाद'],
+  positions: {
+    pehla: 0, पहला: 0, pehli: 0, पहली: 0, doosra: 1, दूसरा: 1, doosri: 1, दूसरी: 1, teesra: 2, तीसरा: 2, teesri: 2, तीसरी: 2,
+    chautha: 3, चौथा: 3, chauthi: 3, चौथी: 3, paanchva: 4, पाँचवा: 4, पांचवा: 4, aakhri: -1, आखिरी: -1, antim: -1, अंतिम: -1,
+  },
+  numbers: {
+    ek: 1, एक: 1, teen: 3, तीन: 3, char: 4, चार: 4, paanch: 5, पाँच: 5, पांच: 5, chhe: 6, छह: 6, chhah: 6, saat: 7, सात: 7,
+    aath: 8, आठ: 8, nau: 9, नौ: 9, das: 10, दस: 10, gyarah: 11, ग्यारह: 11, barah: 12, बारह: 12,
+  },
+  languages: { hindi: 'hi-IN', हिंदी: 'hi-IN', हिन्दी: 'hi-IN', tamil: 'ta-IN', तमिल: 'ta-IN', english: 'en-IN', अंग्रेज़ी: 'en-IN', angrezi: 'en-IN' },
+  shortcuts: {
+    'logout karo': 'sign out', 'लॉगआउट करो': 'sign out', 'लॉग आउट करो': 'sign out', 'bahar niklo': 'sign out',
+    'बाहर निकलो': 'sign out', 'साइन आउट करो': 'sign out',
+  },
+  names: {
+    dashboard: ['डैशबोर्ड', 'dashbord', 'daishboard', 'होम', 'main page'],
+    overview: ['ओवरव्यू', 'डैशबोर्ड', 'dashboard'],
+    cases: ['केस', 'केसेस', 'case', 'मुकदमे', 'mukadme'],
+    'my cases': ['मेरे केस', 'mere cases', 'mere case', 'मेरे मुकदमे'],
+    updates: ['अपडेट', 'अपडेट्स', 'update', 'नई जानकारी'],
+    'ask mrcourt': ['ask', 'ask mr court', 'mr court', 'मिस्टर कोर्ट', 'पूछो', 'poochho', 'सवाल पूछो', 'sawal poochho'],
+    drafts: ['ड्राफ्ट', 'ड्राफ्ट्स', 'draft', 'मसौदे'],
+    settings: ['सेटिंग', 'सेटिंग्स', 'setting', 'settings page', 'सेटिंग पेज'],
+    advocates: ['वकील', 'vakil', 'advocate'],
+    clients: ['क्लाइंट', 'ग्राहक', 'grahak', 'client'],
+    verifications: ['वेरिफिकेशन', 'verification', 'सत्यापन'],
+    messages: ['मैसेज', 'संदेश', 'message', 'sandesh'],
+    'audit log': ['ऑडिट लॉग', 'audit', 'audit logs', 'ऑडिट'],
+    history: ['इतिहास', 'itihas', 'हिस्ट्री'],
+    'sign out': ['लॉगआउट', 'लॉग आउट', 'logout', 'log out', 'साइन आउट', 'बाहर निकलो', 'bahar niklo'],
+    save: ['सेव', 'सहेजो', 'sahejo', 'सेव करो'],
+    cancel: ['कैंसल', 'रद्द'],
+    close: ['बंद', 'band'],
+    send: ['भेजो', 'bhejo', 'सेंड'],
+  },
+  riskWords: [
+    'hatao', 'हटाओ', 'mitao', 'मिटाओ', 'delete', 'डिलीट', 'remove', 'रिमूव', 'logout', 'लॉगआउट', 'bhejo', 'भेजो',
+    'send', 'सेंड', 'deactivate', 'निष्क्रिय', 'nishkriya',
+  ],
+  help: {
+    go: 'dashboard par jao · cases kholo · settings kholo · peeche jao',
+    click: 'save dabao · history tab kholo',
+    numbers: 'numbers dikhao · 7 dabao · pehla case kholo · aakhri kholo',
+    set: 'reminders chalu karo · dark mode off karo',
+    scroll: 'neeche scroll karo · upar scroll karo · band karo',
+    dictate: 'question box dabao, phir bolkar likho · dictation band karo',
+    read: 'jawab padho · screen padho · padhna band karo',
+    stop: 'main kya bol sakta hoon · sunna band karo',
+  },
+  goTemplate: '{x} par jao',
+  suggestion: 'dashboard par jao',
+  needsReview: true,
+};

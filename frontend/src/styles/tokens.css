@@ -7,6 +7,7 @@
   --bg:#FAF7F0; --surface:#FFFFFF; --ink:#1F2430; --muted:#636978; --line:#E5DFD0;
   --navy:#14213D; --navy-2:#22345C; --on-navy:#FFFFFF; --sand:#D9D2C0;
   --gold:#B8935A; --gold-ink:#82622D; --tint:#F3EBDA; --green:#2F6B4F; --green-bg:#E6EFE9; --closed-bg:#ECEBE6;
+  --teal:#2DD4BF; --teal-deep:#0E6F6F; /* menu accent (two-colour menus), same in both themes */
   --serif:'Playfair Display',Georgia,'Times New Roman',serif;
   --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
 }

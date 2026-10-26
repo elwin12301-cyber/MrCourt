@@ -14,6 +14,7 @@ def test_update_settings(advocate_client):
     assert response.status_code == 200
     assert response.json() == {
         "language": "en", "whatsapp_reminders": False, "hearing_alert_days": 3, "theme": "dark",
+        "voice_consent": False, "voice_cloud_opt_in": False, "voice_language": None,
     }
     assert advocate_client.get(f"{API}/me").json()["settings"]["theme"] == "dark"
 

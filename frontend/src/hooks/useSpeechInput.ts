@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { announceQuestionMic } from '../voice/coordination';
 
 interface RecognitionResultEvent {
   results: ArrayLike<ArrayLike<{ transcript: string }>>;
 }
 
-interface Recognition {
+export interface Recognition {
   lang: string;
   interimResults: boolean;
   continuous: boolean;
@@ -16,9 +17,9 @@ interface Recognition {
   abort?(): void;
 }
 
-type RecognitionCtor = new () => Recognition;
+export type RecognitionCtor = new () => Recognition;
 
-function getCtor(): RecognitionCtor | null {
+export function getCtor(): RecognitionCtor | null {
   const w = window as unknown as {
     SpeechRecognition?: RecognitionCtor;
     webkitSpeechRecognition?: RecognitionCtor;
@@ -139,6 +140,7 @@ export function useSpeechInput(onText: (text: string) => void) {
     };
     recognition.onend = () => {
       active.current = null;
+      announceQuestionMic('end');
       if (!failed.current) {
         setState('idle');
         setNotice(heard.current ? VOICE_STOPPED : null);
@@ -150,9 +152,11 @@ export function useSpeechInput(onText: (text: string) => void) {
     setState('listening');
     setNotice(VOICE_LISTENING);
     try {
+      announceQuestionMic('start');
       recognition.start();
     } catch {
       active.current = null;
+      announceQuestionMic('end');
       setState('error');
       setNotice(VOICE_FAILED);
     }

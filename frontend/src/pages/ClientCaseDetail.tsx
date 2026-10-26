@@ -43,7 +43,7 @@ export default function ClientCaseDetail() {
   if (error || !c) {
     return (
       <section className="view">
-        <Link to="/cases" className="back">
+        <Link to="/cases" className="back" aria-label="Back to my cases">
           <Icon name="back" />
           My cases
         </Link>
@@ -60,7 +60,7 @@ export default function ClientCaseDetail() {
 
   return (
     <section className="view" id="case" data-view="client-case">
-      <Link to="/cases" className="back">
+      <Link to="/cases" className="back" aria-label="Back to my cases">
         <Icon name="back" />
         My cases
       </Link>

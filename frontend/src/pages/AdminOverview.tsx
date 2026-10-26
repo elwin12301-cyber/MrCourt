@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AuditList } from '../components/AuditList';
+import { VoicePanel } from '../components/VoicePanel';
 import { useOverview } from '../services/admin';
 import { formatToday } from './Dashboard';
 
@@ -21,6 +22,7 @@ export default function AdminOverview() {
         <h1>Administration</h1>
         <p className="sub">{formatToday(new Date())}</p>
       </div>
+      <VoicePanel />
       {isError && (
         <p className="sub" role="alert">
           We could not load the overview. Please try again.
@@ -38,7 +40,7 @@ export default function AdminOverview() {
       <div className="card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <h2>Latest activity</h2>
-          <Link to="/admin/audit" className="back" style={{ color: 'var(--gold-ink)', fontWeight: 600 }}>
+          <Link to="/admin/audit" className="back" aria-label="See the whole audit log" style={{ color: 'var(--gold-ink)', fontWeight: 600 }}>
             Audit log
           </Link>
         </div>

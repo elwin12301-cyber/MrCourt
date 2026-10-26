@@ -73,7 +73,10 @@ def test_me_shape(advocate_client):
         "id", "role", "full_name", "bar_registration_number",
         "verification_status", "is_admin", "settings",
     }
-    assert set(me["settings"]) == {"language", "whatsapp_reminders", "hearing_alert_days", "theme"}
+    assert set(me["settings"]) == {
+        "language", "whatsapp_reminders", "hearing_alert_days", "theme",
+        "voice_consent", "voice_cloud_opt_in", "voice_language",
+    }
 
 
 def test_logout_clears_session(advocate_client):

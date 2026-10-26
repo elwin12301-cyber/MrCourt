@@ -33,10 +33,10 @@ export default function AdminVerifications() {
                 {u.bar_registration_number ?? 'No number'} · {u.email ?? u.phone ?? 'no contact'}
               </span>
             </span>
-            <Button small disabled={decide.isPending} onClick={() => decide.mutate({ id: u.id, decision: 'verified' })}>
+            <Button small data-voice-risk="verify" aria-label={`Confirm ${u.full_name}`} disabled={decide.isPending} onClick={() => decide.mutate({ id: u.id, decision: 'verified' })}>
               Confirm
             </Button>
-            <Button small variant="ghost" disabled={decide.isPending} onClick={() => decide.mutate({ id: u.id, decision: 'rejected' })}>
+            <Button small variant="ghost" data-voice-risk="verify" aria-label={`Reject ${u.full_name}`} disabled={decide.isPending} onClick={() => decide.mutate({ id: u.id, decision: 'rejected' })}>
               Reject
             </Button>
           </div>

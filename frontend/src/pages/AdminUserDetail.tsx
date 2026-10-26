@@ -196,6 +196,7 @@ export default function AdminUserDetail() {
                 <div>
                   <Button
                     small
+                    data-voice-risk="suspend"
                     disabled={reactivate.isPending}
                     onClick={() => void run(() => reactivate.mutateAsync(undefined), () => apply({ status: 'active', suspension: null }), 'Account reactivated.')}
                   >
@@ -219,6 +220,7 @@ export default function AdminUserDetail() {
                     <Button
                       small
                       variant="ghost"
+                      data-voice-risk="suspend"
                       disabled={suspend.isPending || !reason.trim()}
                       onClick={() =>
                         void run(
@@ -233,7 +235,7 @@ export default function AdminUserDetail() {
                     >
                       Suspend account
                     </Button>
-                    <Button small variant="ghost" disabled={signOut.isPending} onClick={() => void run(() => signOut.mutateAsync(undefined), () => undefined, 'Signed out everywhere.')}>
+                    <Button small variant="ghost" data-voice-risk="logout" disabled={signOut.isPending} onClick={() => void run(() => signOut.mutateAsync(undefined), () => undefined, 'Signed out everywhere.')}>
                       Sign out everywhere
                     </Button>
                   </div>

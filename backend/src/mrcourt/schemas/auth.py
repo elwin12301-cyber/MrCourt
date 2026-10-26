@@ -56,6 +56,9 @@ class SettingsOut(BaseModel):
     whatsapp_reminders: bool
     hearing_alert_days: int
     theme: Literal["system", "light", "dark"]
+    voice_consent: bool = False  # whether the person agreed to voice control; the time itself is not returned
+    voice_cloud_opt_in: bool = False
+    voice_language: str | None = None
 
 
 class SettingsPatch(BaseModel):
@@ -63,6 +66,9 @@ class SettingsPatch(BaseModel):
     whatsapp_reminders: bool | None = None
     hearing_alert_days: int | None = Field(default=None, ge=0, le=14)
     theme: Literal["system", "light", "dark"] | None = None
+    voice_consent: bool | None = None
+    voice_cloud_opt_in: bool | None = None
+    voice_language: Literal["en-IN", "hi-IN", "ta-IN"] | None = None  # None clears the choice
 
 
 class MeOut(BaseModel):

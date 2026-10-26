@@ -103,7 +103,7 @@ function UpdateForm({ caseId }: { caseId: string }) {
         <textarea id="client-update" rows={3} maxLength={1000} value={text} onChange={(e) => setText(e.target.value)} style={textarea} required />
       </label>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Button type="submit" small disabled={send.isPending || !text.trim()}>Send update</Button>
+        <Button type="submit" small data-voice-risk="send" disabled={send.isPending || !text.trim()}>Send update</Button>
         {note && <span className="fine" role="status">{note}</span>}
       </div>
     </form>
@@ -225,7 +225,7 @@ function QuestionsInbox({ caseId }: { caseId: string }) {
                 />
               </label>
               {errors[q.id] && <p className="fine" role="alert">{errors[q.id]}</p>}
-              <div><Button type="submit" small disabled={reply.isPending || !(drafts[q.id] ?? '').trim()}>Send reply</Button></div>
+              <div><Button type="submit" small data-voice-risk="send" disabled={reply.isPending || !(drafts[q.id] ?? '').trim()}>Send reply</Button></div>
             </form>
           )}
         </div>

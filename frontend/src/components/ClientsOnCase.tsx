@@ -25,6 +25,7 @@ export function ClientsOnCase({ caseId }: { caseId: string }) {
             variant="ghost"
             disabled={remove.isPending}
             aria-label={`Remove ${c.contact_or_name}`}
+            data-voice-risk="remove"
             onClick={() => {
               if (window.confirm(`Remove ${c.contact_or_name}? They will no longer see this case.`)) remove.mutate(c.id);
             }}

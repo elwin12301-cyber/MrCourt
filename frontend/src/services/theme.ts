@@ -2,20 +2,20 @@ export type Theme = 'system' | 'light' | 'dark';
 
 const KEY = 'mrcourt-theme';
 
+/** The classic light look is the default; a person's own choice (light, dark or "match my device") is kept. */
 function readStored(): Theme {
   try {
     const value = localStorage.getItem(KEY);
-    if (value === 'light' || value === 'dark') return value;
+    if (value === 'light' || value === 'dark' || value === 'system') return value;
   } catch {
     /* storage can be unavailable (private windows, blocked site data) */
   }
-  return 'system';
+  return 'light';
 }
 
 function store(theme: Theme) {
   try {
-    if (theme === 'system') localStorage.removeItem(KEY);
-    else localStorage.setItem(KEY, theme);
+    localStorage.setItem(KEY, theme);
   } catch {
     /* ignore */
   }

@@ -6,6 +6,10 @@ export interface Settings {
   whatsapp_reminders: boolean;
   hearing_alert_days: number;
   theme: 'system' | 'light' | 'dark';
+  /** Voice control (feature 011): agreed to the microphone notice, cloud option, recognition language. */
+  voice_consent: boolean;
+  voice_cloud_opt_in: boolean;
+  voice_language: string | null;
 }
 
 export interface Me {

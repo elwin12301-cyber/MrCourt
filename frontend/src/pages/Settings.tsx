@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { initials } from '../components/AppShell';
 import { ContactCardForm } from '../components/ContactCardForm';
 import { PhoneCodeStep } from '../components/PhoneCodeStep';
+import { VoiceSettingsCard } from '../components/VoiceSettingsCard';
 import { WhatsAppCard } from '../components/WhatsAppCard';
 import { DeactivateDialog } from '../components/DeactivateDialog';
 import { Button, Chip } from '../components/ui';
@@ -68,7 +69,7 @@ export default function Settings() {
               <Chip tone="soon">Verification pending</Chip>
             </span>
           )}
-          <Button variant="ghost" style={{ marginTop: 8 }} onClick={() => void leave()}>
+          <Button variant="ghost" style={{ marginTop: 8 }} data-voice-risk="logout" onClick={() => void leave()}>
             Sign out
           </Button>
         </div>
@@ -181,6 +182,7 @@ export default function Settings() {
             )}
           </div>
           <WhatsAppCard />
+          <VoiceSettingsCard />
           <div className="set">
             <b style={{ fontWeight: 500 }}>Privacy &amp; data (DPDP)</b>
             <button
@@ -206,7 +208,10 @@ export default function Settings() {
                 knowledge sources and your question are sent to Voyage AI. Voice input is handled by your
                 browser by default and MrCourt never receives the audio; if you choose the speech service
                 (Better for Tamil, or the Text Assistant), your voice is sent to Sarvam AI to be turned into
-                text. MrCourt does not store audio. Your mobile number is used only to text you verification codes, password
+                text. MrCourt does not store audio. Voice control is off until you agree to it in Settings: your browser’s own
+                speech service does the listening (in Chrome and Edge its maker may process the audio under its own terms),
+                MrCourt keeps nothing you say, and only if you choose the cloud option for a language your browser cannot
+                recognise are short phrases sent to the speech service, not stored. Your mobile number is used only to text you verification codes, password
                 reset codes and hearing reminders, through the text-message service that is set up (Twilio).
               </p>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

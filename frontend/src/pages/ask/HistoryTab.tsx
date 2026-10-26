@@ -26,7 +26,7 @@ function Opened({ id }: { id: string }) {
   if (!data) return <p className="fine">Opening…</p>;
   if (data.lines) {
     return (
-      <div className="card a">
+      <div className="card a" data-voice-read>
         {data.conversation_deleted && (
           <p className="fine" style={{ margin: '0 0 8px' }}>
             This conversation was deleted from the Text Assistant tab. This is the text it had.

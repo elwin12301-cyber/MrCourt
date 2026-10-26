@@ -46,8 +46,17 @@ class UserSettings(Base):
     # Contact details an advocate shows to clients: {"phone": ..., "email": ..., "office": ...}.
     # Empty by default; a field is shown to clients only when filled in.
     client_contact: Mapped[dict[str, str] | None] = mapped_column(JSON, default=dict)
+    # Voice control (feature 011). Nothing said is ever stored: only whether the person agreed, whether short
+    # phrases may go to the cloud speech service for languages the browser cannot recognise, and the language.
+    voice_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    voice_cloud_opt_in: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false", nullable=False)
+    voice_language: Mapped[str | None] = mapped_column(String(8))
 
     user: Mapped[User] = relationship(back_populates="settings")
+
+    @property
+    def voice_consent(self) -> bool:
+        return self.voice_consent_at is not None
 
 
 class OtpChallenge(IdMixin, TimestampMixin, Base):

@@ -40,6 +40,10 @@ ACTION_LABELS = {
     "whatsapp.stop": "Replied STOP to WhatsApp messages",
     "whatsapp.admin.failures.view": "Opened the WhatsApp failure list",
     "whatsapp.admin.resend": "Re-sent a failed WhatsApp message",
+    "voice.consent.on": "Agreed to voice control",
+    "voice.consent.off": "Withdrew agreement to voice control",
+    "voice.cloud.on": "Allowed the cloud speech service for voice control",
+    "voice.cloud.off": "Stopped allowing the cloud speech service for voice control",
 }
 
 

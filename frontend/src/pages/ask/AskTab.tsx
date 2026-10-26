@@ -184,7 +184,7 @@ export default function AskTab() {
           onChange={(e) => setInput(e.target.value)}
         />
         <VoiceButton voice={voice} />
-        <button className="ib send" aria-label="Send" disabled={busy || !input.trim()}>
+        <button className="ib send" aria-label="Send" data-voice-risk="none" disabled={busy || !input.trim()}>
           <Icon name="send" />
         </button>
       </form>

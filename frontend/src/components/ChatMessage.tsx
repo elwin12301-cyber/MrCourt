@@ -54,7 +54,8 @@ export function AnswerMessage({ answer, askLawyerHref }: { answer: Answer | Assi
   const reply = 'steps' in answer ? answer : null;
   const me = useMe().data;
   return (
-    <div className="card a">
+    // data-voice-read: "read the answer" reads this whole card, with its sources and the disclaimer.
+    <div className="card a" data-voice-read>
       <Who />
       {answer.case_specific_notice && (
         <div className="advicenotice" role="note">

@@ -65,7 +65,7 @@ export function AskLawyer({ caseId, available }: { caseId: string; available: bo
             />
           </label>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-            <Button type="submit" small disabled={busy || !text.trim()}>Send question</Button>
+            <Button type="submit" small data-voice-risk="send" disabled={busy || !text.trim()}>Send question</Button>
             <Button small variant="ghost" disabled={busy} onClick={() => void send('update_request')}>
               Ask for an update
             </Button>

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Icon } from '../components/Icon';
 import { QuickAsk } from '../components/QuickAsk';
+import { VoicePanel } from '../components/VoicePanel';
 import { Button } from '../components/ui';
 import { useMe } from '../services/auth';
 import {
@@ -82,6 +83,7 @@ export default function Dashboard() {
           {weekNote}
         </p>
       </div>
+      <VoicePanel />
       {!isAdvocate && <Invitations />}
       <div className="row">
         <div className="card stat">

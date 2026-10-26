@@ -13,12 +13,12 @@ function targetLink(item: AuditItem): string | null {
 export function AuditList({ items }: { items: AuditItem[] }) {
   if (items.length === 0) return <p className="sub">Nothing has been recorded yet.</p>;
   return (
-    <div>
+    <ul style={{ listStyle: 'none', margin: 0, padding: 0 }} aria-label="Audit entries">
       {items.map((item) => {
         const link = targetLink(item);
         const detail = describeDetail(item);
         return (
-          <div className="act" key={item.id}>
+          <li className="act" key={item.id}>
             <b>
               {item.admin_name} · {item.action_label}
             </b>
@@ -34,9 +34,9 @@ export function AuditList({ items }: { items: AuditItem[] }) {
               )}
               {detail ? ` · ${detail}` : ''} · <time dateTime={item.created_at}>{dateTimeOf(item.created_at)}</time>
             </span>
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ul>
   );
 }

@@ -399,6 +399,38 @@ set the webhook to `https://<your site>/api/v1/whatsapp/webhook` with that verif
 host's secret store. WhatsApp charges for template messages and its prices and free allowances change: check them first.
 Test steps: `specs/010-whatsapp-channel/quickstart.md`. **Roll back** with `WHATSAPP_PROVIDER=none`.
 
+## Voice control
+
+You can use the whole app by speaking (feature 011, `specs/011-voice-control/`). It is **off until you agree to it**.
+
+- **Turn it on:** the microphone button at the bottom right of every screen (or the voice panel on your dashboard, or
+  Alt+Shift+V). The first time you read a short notice and choose "Agree and turn on". It then listens continuously, with
+  a clear "Listening" indicator and the last words heard, until you turn it off: the button, Alt+Shift+V, or say "stop
+  listening". Withdraw your agreement any time in Settings.
+- **Move around:** "go to dashboard", "open cases", "open Ask MrCourt", "open the history tab", "go back", "log out".
+- **Menu names on their own:** saying just "overview" or "cases" opens that main-menu item (only an exact menu name counts,
+  so ordinary talk is ignored). The app **says what it did** ("Opened Overview") and, when a name is wrong, what to say
+  instead ("Try saying “go to Dashboard”"). The **Replies** button in the voice bar turns the spoken replies off and on.
+- **Press anything:** by name ("click save"), by number ("show numbers", then "click 7"), or by place in a list ("open the
+  first case", "open the last one"). "Turn on text message reminders" sets a switch.
+- **Type and listen:** "click question box", "dictate", speak, "stop dictating"; "read the answer" reads it aloud with its
+  sources and the disclaimer; "scroll down", "close dialog", "what can I say".
+- **Languages:** English, Hindi and Tamil, also mixed with English screen names ("dashboard ku po", "settings kholo"). The
+  Hindi and Tamil wording is **not yet checked by native speakers**; a phrase that matches nothing does nothing.
+- **Safe by design:** deleting, removing, signing out, deactivating, sending, suspending and verification decisions always
+  ask you to say "confirm" first (15 seconds, "cancel" or Escape drops it). Unclear or low-confidence phrases never act, and
+  only the first command of a phrase runs. The mouse and keyboard always keep working.
+- **Privacy:** the browser's own speech recognition listens (in Chrome and Edge its maker may process the audio under its
+  own terms); MrCourt never receives the audio and keeps nothing you say, not in storage, logs or the audit log (only
+  your agreement and the cloud choice are recorded, without content). For a language your browser cannot recognise you
+  may choose, in Settings, the **cloud speech service**: short phrases are then sent to MrCourt's speech service (the one
+  the voice question feature uses), not stored. Best in Chrome or Edge over HTTPS or localhost.
+- **For people adding screens:** voice control finds clickable things by their accessible name, so give every button, link
+  and field a visible label or `aria-label`. Mark risky controls `data-voice-risk="delete|logout|send|..."` (or `"none"`
+  for one that only looks risky), answers `data-voice-read`, and fields that must never be dictated `data-voice-no-dictate`.
+  The browser test `voice-coverage.spec.ts` fails, naming the control, when something clickable has no name, is mouse-only,
+  or carries a risky word without a tag.
+
 ## Deploying on Render
 
 The repository has a `Dockerfile` (builds the website and serves it from the API, one address) and a

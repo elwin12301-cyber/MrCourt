@@ -4,10 +4,11 @@ from fastapi import APIRouter, HTTPException, Response, status
 from sqlalchemy import select
 
 from mrcourt.api.deps import CurrentUser, DbSession
+from mrcourt.db.base import utcnow
 from mrcourt.models import User
 from mrcourt.schemas.auth import DeactivateRequest, MeOut, MePatch, SettingsOut, SettingsPatch
 from mrcourt.schemas.whatsapp import ConsentIn, WhatsAppSettingsOut
-from mrcourt.services import privacy
+from mrcourt.services import audit, privacy
 from mrcourt.services.whatsapp import consent as whatsapp_consent
 from mrcourt.services.session import SESSION_COOKIE
 
@@ -49,11 +50,41 @@ def patch_me(data: MePatch, user: CurrentUser, db: DbSession) -> MeOut:
 
 @router.patch("/settings", response_model=SettingsOut)
 def patch_settings(data: SettingsPatch, user: CurrentUser, db: DbSession) -> SettingsOut:
-    for field, value in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    settings = user.settings
+    _change_voice(db, user, changes)
+    for field, value in changes.items():
+        if field.startswith("voice_"):
+            continue
         if value is not None:
-            setattr(user.settings, field, value)
+            setattr(settings, field, value)
+    if "voice_language" in changes:
+        settings.voice_language = changes["voice_language"]  # None is a real choice: the app default
     db.commit()
-    return SettingsOut.model_validate(user.settings)
+    return SettingsOut.model_validate(settings)
+
+
+def _change_voice(db: DbSession, user: User, changes: dict[str, object]) -> None:
+    """Voice control consent and the cloud option. Consent is required for the cloud option, and withdrawing it
+    also turns that option off. Each real change is audited, with who and when and never any phrase or audio."""
+    settings = user.settings
+    consent = changes.get("voice_consent")
+    cloud = changes.get("voice_cloud_opt_in")
+    wants_consent = settings.voice_consent if consent is None else bool(consent)
+    if cloud and not wants_consent:
+        raise HTTPException(422, "Agree to voice control first")
+    if consent is True and not settings.voice_consent:
+        settings.voice_consent_at = utcnow()
+        audit.record(db, user, "voice.consent.on", "user", user.id)
+    elif consent is False and settings.voice_consent:
+        settings.voice_consent_at = None
+        audit.record(db, user, "voice.consent.off", "user", user.id)
+        if settings.voice_cloud_opt_in:
+            settings.voice_cloud_opt_in = False
+            audit.record(db, user, "voice.cloud.off", "user", user.id)
+    if cloud is not None and bool(cloud) != settings.voice_cloud_opt_in:
+        settings.voice_cloud_opt_in = bool(cloud)
+        audit.record(db, user, "voice.cloud.on" if cloud else "voice.cloud.off", "user", user.id)
 
 
 def _whatsapp(db: DbSession, user: User) -> WhatsAppSettingsOut:
