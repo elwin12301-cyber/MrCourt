@@ -11,9 +11,37 @@ produces is informational, not legal advice.
 - **Specification and plan**: `specs/001-mrcourt-legal-app/` (Spec Kit), project principles in
   `.specify/memory/constitution.md`
 
+## Prerequisites
+
+**To run it** you need:
+
+| What | Why | Notes |
+|---|---|---|
+| Python 3.12 or newer | The backend (3.13 is what it is developed on) | `python --version` |
+| Node.js 22 or newer, with npm | The frontend | `node --version` |
+| Docker Desktop (or Docker Engine with Compose) | PostgreSQL 16 with pgvector, the development and production database | Start it before the database; on Windows it must be running (the whale icon). SQLite is only for quick local tries and tests |
+| Git | To get and update the code | |
+| A modern browser: **Chrome or Edge** | The app; **voice control and voice questions work best there** (they use the browser's speech recognition, which needs a microphone, sound output for spoken replies, and `https://` or `http://localhost`) | Other browsers work, but without speech recognition |
+
+**Only if you use these features** (everything below is optional; the app runs without it and says what is off):
+
+| Feature | What you need |
+|---|---|
+| Scanned PDFs and images (OCR) | Tesseract installed on the machine with the `eng` and `tam` language data (see "Scans (OCR)" below) |
+| Browser tests | `npx playwright install chromium` once (see "Tests") |
+| Model-written answers | An Anthropic API key **or** a free Google Gemini key |
+| Meaning-based search | A Voyage AI key (free tier is limited to a few requests a minute) |
+| Speech for Indian languages, and the cloud option of voice control | A Sarvam AI key |
+| Real text messages (sign-up codes, reminders) | A Fast2SMS key with wallet balance, or a Twilio account |
+| WhatsApp messages | A Fast2SMS WhatsApp number with **approved templates** (or a Twilio sandbox, or a Meta WhatsApp Business account), and a public HTTPS address for incoming messages and delivery reports (see "WhatsApp channel") |
+| Hosting on Render | A Render account and a PostgreSQL database with pgvector (see "Deploying on Render") |
+
+Keys go only in `backend/.env` (copy `.env.example` there); never commit them. Without any key the app still works: answers
+quote the cited passages, search is by keywords, and codes and reminders appear on the development messages page.
+
 ## Run it locally
 
-You need Python 3.12+ and Node 22+.
+See Prerequisites above.
 
 ```bash
 # 1. Backend
@@ -79,7 +107,7 @@ pixel comparison against the prototype.
 
 ## Configuration
 
-Copy `.env.example` to `.env`. Names only are listed there; never commit values.
+Copy `.env.example` to **`backend/.env`** (the backend reads `.env` from the folder it is started in, so start it from `backend/`). Every variable is listed there with its default; never commit values.
 
 | Variable | Purpose |
 |----------|---------|
@@ -103,6 +131,21 @@ Copy `.env.example` to `.env`. Names only are listed there; never commit values.
 | `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_VERIFY_TOKEN` | Meta's WhatsApp Business details: the number's id, the access token, the secret that signs its calls, and the token you type when setting up the webhook |
 | `WHATSAPP_TEMPLATE_CODE`, `_REMINDER`, `_UPDATE`, `_ACTIVITY` | Names of the approved message templates (defaults `mrcourt_code`, `mrcourt_hearing_reminder`, `mrcourt_case_update`, `mrcourt_activity`) |
 | `PUBLIC_APP_URL`, `WHATSAPP_WEBHOOK_URL`, `WHATSAPP_DAILY_SEND_CAP` | The site's public address (used in "read more" links), the exact address the provider calls (Twilio signs it; default is the public address plus `/api/v1/whatsapp/webhook`), and the most WhatsApp template messages sent per day (default 500) |
+
+Other settings (all have defaults, all listed in `.env.example`):
+
+| Variable | Purpose |
+|----------|---------|
+| `ENVIRONMENT`, `FRONTEND_DIST`, `SESSION_MAX_AGE_SECONDS` | `production` turns on the production checks; the folder of the built website the API serves; how long a sign-in lasts (default 12 hours) |
+| `ANSWER_MODEL`, `ASSISTANT_MODEL` | The Anthropic model that writes answers (default `claude-sonnet-5-5`) and the one for the assistant (empty = the answer model) |
+| `MIN_VECTOR_SCORE`, `MIN_RETRIEVAL_SCORE`, `RERANK_CANDIDATES` | Search floors and how many candidates the answer check looks at |
+| `RANKING_MODE`, `RANK_W_*`, `RANK_BOOST_*`, `RANK_RECENCY_MAX`, `RANK_PER_DOCUMENT` | Hybrid ranking weights and signals (`RANKING_MODE=rrf` is the rollback); see "How answers are ranked" |
+| `UPLOAD_DIR`, `MAX_UPLOAD_BYTES`, `MAX_KNOWLEDGE_PAGES`, `MAX_OCR_PAGES` | Where case documents are stored and the size and page limits |
+| `OTP_TTL_SECONDS`, `OTP_MAX_ATTEMPTS`, `LOGIN_ATTEMPTS_PER_WINDOW`, `SMS_COUNTRY_CODE` | Sign-in code lifetime and tries, the sign-in rate limit, and the default country code for phone numbers (91) |
+| `FAST2SMS_API_KEY`, `FAST2SMS_OTP_ROUTE` | Fast2SMS texts (codes and reminders); the OTP route only after Fast2SMS verifies your website |
+| `TWILIO_API_KEY_SID`, `TWILIO_API_KEY_SECRET`, `TWILIO_WHATSAPP_FROM` | A Twilio API key instead of the auth token, and the WhatsApp sandbox number |
+| `REMINDER_INTERVAL_MINUTES` | Minutes between hearing-reminder runs inside the app (0 = off) |
+| `WHATSAPP_NUDGE_DELAY_SECONDS`, `WHATSAPP_QUESTIONS_PER_MINUTE`, `WHATSAPP_QUESTIONS_PER_DAY` | How long close-together updates are merged, and the per-person question limits on WhatsApp |
 
 Send due reminders on a schedule with `python -m mrcourt.services.reminders`.
 
