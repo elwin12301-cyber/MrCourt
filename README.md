@@ -36,6 +36,9 @@ produces is informational, not legal advice.
 | WhatsApp messages | A Fast2SMS WhatsApp number with **approved templates** (or a Twilio sandbox, or a Meta WhatsApp Business account), and a public HTTPS address for incoming messages and delivery reports (see "WhatsApp channel") |
 | Hosting on Render | A Render account and a PostgreSQL database with pgvector (see "Deploying on Render") |
 
+To check this machine against the list above, run `sh scripts/check-prerequisites.sh` (macOS, Linux, Git Bash) or
+`powershell -File scripts/check-prerequisites.ps1` (Windows). It reports what is missing and exits with 1 if a required item is.
+
 Keys go only in `backend/.env` (copy `.env.example` there); never commit them. Without any key the app still works: answers
 quote the cited passages, search is by keywords, and codes and reminders appear on the development messages page.
 

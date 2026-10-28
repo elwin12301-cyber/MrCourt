@@ -243,6 +243,8 @@ a.statlink:hover,a.statlink:focus-visible{border-color:var(--gold)}
 .vc-dock .btn:not(.ghost){background:var(--gold);border-color:var(--gold);color:#14213D}
 .vc-error{margin:0;background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:10px;padding:10px 14px;font-size:13px;max-width:360px}
 body.vc-on main{padding-bottom:150px}
+/* the welcome and sign-in screens are not inside <main>: keep their last lines (such as the admin link) above the bar */
+body.vc-on .split .panel{margin-bottom:130px}
 @media (max-width:720px){
   /* Anchored to the left edge: a wide table can make a phone's layout wider than its screen, and a right-anchored
      button would then sit off-screen. */
@@ -251,6 +253,7 @@ body.vc-on main{padding-bottom:150px}
   .vc-launch-text{display:none}
   .vc-actions{width:100%;justify-content:flex-end}
   body.vc-on main{padding-bottom:210px}
+  body.vc-on .split .panel{margin-bottom:190px}
 }
 /* number labels, in the top layer so they also show over an open dialog */
 .vc-numbers{position:fixed;inset:0;margin:0;padding:0;border:0;background:transparent;width:100%;height:100%;overflow:visible;pointer-events:none;color:inherit}
